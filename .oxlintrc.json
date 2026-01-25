@@ -1,0 +1,52 @@
+{
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "react",
+    "oxc",
+    "import",
+    "jsx-a11y",
+    "promise",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "style": "error"
+  },
+  "rules": {
+    "eslint/sort-imports": "off", // formatted by oxfmt
+    "eslint/func-style": "off", // for DX
+    "eslint/no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }], // customise
+    "eslint/curly": "off", // allow,
+    "eslint/no-ternary": "off", // allow
+    "eslint/sort-keys": "off", // key order has meanings
+    "react/react-in-jsx-scope": "off", // not necessary on React 17+
+    "import/prefer-default-export": "off", // prefer named exports
+    "import/no-named-export": "off", // prefer named expoerts
+    "import/exports-last": "off", // allow
+    "import/group-exports": "off", // allow
+    "unicorn/prefer-global-this": "off" // prefer environment specific alias
+  },
+  "settings": {
+    "jsx-a11y": {
+      "polymorphicPropName": null,
+      "components": {},
+      "attributes": {}
+    },
+    "react": {
+      "formComponents": [],
+      "linkComponents": [],
+      "version": null
+    },
+    "vitest": {
+      "typecheck": false
+    }
+  },
+  "env": {
+    "builtin": true
+  },
+  "globals": {},
+  "ignorePatterns": ["routeTree.gen.ts"]
+}

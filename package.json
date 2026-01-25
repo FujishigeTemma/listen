@@ -1,0 +1,28 @@
+{
+  "name": "listen",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "dev:admin": "pnpm --filter @listen/admin dev",
+    "dev:web": "pnpm --filter @listen/web dev",
+    "build": "pnpm run -r build",
+    "typecheck": "tsgo --noEmit",
+    "lint": "oxlint --type-aware --type-check --fix && eslint --fix",
+    "format": "oxfmt",
+    "db:generate": "pnpm --filter @listen/db generate",
+    "db:migrate": "pnpm --filter @listen/db migrate",
+    "deploy:web": "pnpm --filter @listen/web deploy"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260122.4",
+    "oxfmt": "^0.26.0",
+    "oxlint": "^1.41.0",
+    "oxlint-tsgolint": "^0.11.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

@@ -1,0 +1,32 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+catalog:
+  # React (admin, web)
+  react: ^19.0.0
+  react-dom: ^19.0.0
+  "@types/react": ^19.0.0
+  "@types/react-dom": ^19.0.0
+
+  # Hono (admin, web)
+  hono: ^4.7.0
+  "@hono/valibot-validator": ^0.5.0
+
+  # TanStack (admin, web)
+  "@tanstack/react-query": ^5.66.0
+  "@tanstack/react-router": ^1.97.0
+
+  # Validation (admin, web, shared)
+  valibot: ^1.0.0
+
+  # Database (admin, web, db)
+  drizzle-orm: ^0.39.0
+
+  # UI (admin, web)
+  lucide-react: ^0.474.0
+  tailwindcss: ^4.0.0
+
+  # Build (admin, web)
+  vite: ^6.1.0
+  "@vitejs/plugin-react": ^4.3.0
