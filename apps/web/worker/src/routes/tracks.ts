@@ -1,22 +1,23 @@
-import { Hono } from "hono";
-import { eq, asc } from "drizzle-orm";
-import { tracks } from "@listen/db";
-import { createDb } from "../lib/db";
 import type { Env, Variables } from "../types";
+import { tracks } from "@listen/db";
+import { asc, eq } from "drizzle-orm";
+import { Hono } from "hono";
 
-const tracksRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
+import { createDB } from "../lib/db";
 
-// Get tracks for a session
-tracksRoutes.get("/:sessionId", async (c) => {
-	const sessionId = c.req.param("sessionId");
-	const db = createDb(c.env.DB);
+const tracksRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().get(
+  "/:sessionId",
+  async (c) => {
+    const sessionId = c.req.param("sessionId");
+    const db = createDB(c.env.DB);
 
-	const trackList = await db.query.tracks.findMany({
-		where: eq(tracks.sessionId, sessionId),
-		orderBy: asc(tracks.position),
-	});
+    const trackList = await db.query.tracks.findMany({
+      where: eq(tracks.sessionId, sessionId),
+      orderBy: asc(tracks.position),
+    });
 
-	return c.json({ tracks: trackList });
-});
+    return c.json({ tracks: trackList });
+  },
+);
 
 export { tracksRoutes };

@@ -4,5 +4,5 @@
 export const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 export function isAuthEnabled(): boolean {
-	return Boolean(CLERK_PUBLISHABLE_KEY);
+  return Boolean(CLERK_PUBLISHABLE_KEY);
 }

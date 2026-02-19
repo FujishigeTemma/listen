@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
-      "Bash(pnpm -w run typecheck:*)"
+      "Bash(pnpm -w run typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(cat:*)"
     ]
   }
 }

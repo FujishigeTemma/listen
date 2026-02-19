@@ -12,9 +12,8 @@
     ]
   },
   "experimentalTailwindcss": {
-    "stylesheet": "./src/style.css",
     "attributes": ["class", "className"],
-    "functions": ["cva", "cn"],
+    "functions": ["cn"],
     "preserveDuplicates": false,
     "preserveWhitespace": false
   }

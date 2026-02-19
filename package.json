@@ -3,26 +3,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm run --parallel dev",
+    "dev": "pnpm -r --parallel --stream run dev",
     "dev:admin": "pnpm --filter @listen/admin dev",
     "dev:web": "pnpm --filter @listen/web dev",
     "build": "pnpm run -r build",
-    "typecheck": "tsgo --noEmit",
-    "lint": "oxlint --type-aware --type-check --fix && eslint --fix",
+    "typecheck": "pnpm -r --parallel run typecheck",
+    "lint": "oxlint --type-aware --type-check --fix",
     "format": "oxfmt",
     "db:generate": "pnpm --filter @listen/db generate",
     "db:migrate": "pnpm --filter @listen/db migrate",
     "deploy:web": "pnpm --filter @listen/web deploy"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260122.4",
-    "oxfmt": "^0.26.0",
-    "oxlint": "^1.41.0",
-    "oxlint-tsgolint": "^0.11.1"
+    "@typescript/native-preview": "7.0.0-dev.20260129.1",
+    "npm-run-all2": "^8.0.4",
+    "oxfmt": "^0.27.0",
+    "oxlint": "^1.42.0",
+    "oxlint-tsgolint": "^0.11.3"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@10.28.2"
 }

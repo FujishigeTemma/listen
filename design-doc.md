@@ -390,30 +390,28 @@ listen/
 ### 9.1 エントリーポイント + AppType エクスポート（apps/admin/server/src/index.ts）
 
 ```typescript
-import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
-import { sessionsRoutes } from './routes/sessions';
-import { tracksRoutes } from './routes/tracks';
-import { healthRoutes } from './routes/health';
-import { env } from './lib/env';
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { sessionsRoutes } from "./routes/sessions";
+import { tracksRoutes } from "./routes/tracks";
+import { healthRoutes } from "./routes/health";
+import { env } from "./lib/env";
 
 // ベースアプリ
-const app = new Hono()
-  .use('*', logger())
-  .use(
-    '*',
-    cors({
-      origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-    })
-  );
+const app = new Hono().use("*", logger()).use(
+  "*",
+  cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  }),
+);
 
 // ルートをチェーンで接続（型推論のため）
 const routes = app
-  .route('/api/sessions', sessionsRoutes)
-  .route('/api/tracks', tracksRoutes)
-  .route('/health', healthRoutes);
+  .route("/api/sessions", sessionsRoutes)
+  .route("/api/tracks", tracksRoutes)
+  .route("/health", healthRoutes);
 
 // AppType をエクスポート（クライアントで使用）
 export type AppType = typeof routes;
@@ -426,24 +424,24 @@ serve({ fetch: routes.fetch, port: env.PORT });
 ### 9.2 セッションルート（apps/admin/server/src/routes/sessions.ts）
 
 ```typescript
-import { Hono } from 'hono';
-import { vValidator } from '@hono/valibot-validator';
-import * as v from 'valibot';
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import { SessionIdSchema } from '@listen/shared';
-import { startFfmpeg, stopFfmpeg, isRunning } from '../services/ffmpeg';
-import { startWatcher, stopWatcher } from '../services/watcher';
-import { flushQueue } from '../services/uploader';
-import { db } from '../services/db';
-import { env } from '../lib/env';
+import { Hono } from "hono";
+import { vValidator } from "@hono/valibot-validator";
+import * as v from "valibot";
+import path from "node:path";
+import fs from "node:fs/promises";
+import { SessionIdSchema } from "@listen/shared";
+import { startFfmpeg, stopFfmpeg, isRunning } from "../services/ffmpeg";
+import { startWatcher, stopWatcher } from "../services/watcher";
+import { flushQueue } from "../services/uploader";
+import { db } from "../services/db";
+import { env } from "../lib/env";
 
 // ルートを定義（チェーンで型を保持）
 export const sessionsRoutes = new Hono()
   // POST /api/sessions - 新規作成
-  .post('/', async (c) => {
+  .post("/", async (c) => {
     const now = new Date();
-    const id = now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
+    const id = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 
     const sessionDir = path.join(env.DATA_DIR, id);
     await fs.mkdir(sessionDir, { recursive: true });
@@ -453,157 +451,141 @@ export const sessionsRoutes = new Hono()
     return c.json({
       id,
       title: session?.title ?? null,
-      state: session?.state ?? 'scheduled',
+      state: session?.state ?? "scheduled",
     });
   })
 
   // GET /api/sessions/:id - 取得
-  .get(
-    '/:id',
-    vValidator('param', v.object({ id: SessionIdSchema })),
-    async (c) => {
-      const { id } = c.req.valid('param');
-      const session = await db.getSession(id);
+  .get("/:id", vValidator("param", v.object({ id: SessionIdSchema })), async (c) => {
+    const { id } = c.req.valid("param");
+    const session = await db.getSession(id);
 
-      if (!session) {
-        return c.json({ error: 'Not found' }, 404);
-      }
-
-      return c.json({
-        id: session.id,
-        title: session.title,
-        state: session.state,
-        scheduledAt: session.scheduledAt,
-        startedAt: session.startedAt,
-        endedAt: session.endedAt,
-        durationSeconds: session.durationSeconds,
-        running: isRunning(),
-      });
+    if (!session) {
+      return c.json({ error: "Not found" }, 404);
     }
-  )
+
+    return c.json({
+      id: session.id,
+      title: session.title,
+      state: session.state,
+      scheduledAt: session.scheduledAt,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      durationSeconds: session.durationSeconds,
+      running: isRunning(),
+    });
+  })
 
   // POST /api/sessions/:id/start - 開始
-  .post(
-    '/:id/start',
-    vValidator('param', v.object({ id: SessionIdSchema })),
-    async (c) => {
-      const { id } = c.req.valid('param');
+  .post("/:id/start", vValidator("param", v.object({ id: SessionIdSchema })), async (c) => {
+    const { id } = c.req.valid("param");
 
-      if (isRunning()) {
-        return c.json({ error: 'Already running' }, 409);
-      }
-
-      const sessionDir = path.join(env.DATA_DIR, id);
-      await fs.mkdir(sessionDir, { recursive: true });
-
-      startFfmpeg({ sessionId: id, dataDir: env.DATA_DIR });
-      startWatcher(sessionDir, id);
-      await db.startSession(id);
-
-      return c.json({ success: true });
+    if (isRunning()) {
+      return c.json({ error: "Already running" }, 409);
     }
-  )
+
+    const sessionDir = path.join(env.DATA_DIR, id);
+    await fs.mkdir(sessionDir, { recursive: true });
+
+    startFfmpeg({ sessionId: id, dataDir: env.DATA_DIR });
+    startWatcher(sessionDir, id);
+    await db.startSession(id);
+
+    return c.json({ success: true });
+  })
 
   // POST /api/sessions/:id/stop - 停止
-  .post(
-    '/:id/stop',
-    vValidator('param', v.object({ id: SessionIdSchema })),
-    async (c) => {
-      const { id } = c.req.valid('param');
-      const session = await db.getSession(id);
+  .post("/:id/stop", vValidator("param", v.object({ id: SessionIdSchema })), async (c) => {
+    const { id } = c.req.valid("param");
+    const session = await db.getSession(id);
 
-      await stopFfmpeg();
-      await stopWatcher();
-      await flushQueue();
+    await stopFfmpeg();
+    await stopWatcher();
+    await flushQueue();
 
-      // vod.m3u8 を index.m3u8 としてアップロード
-      const vodPath = path.join(env.DATA_DIR, id, 'vod.m3u8');
-      try {
-        const vodContent = await fs.readFile(vodPath, 'utf-8');
-        const finalContent = vodContent.includes('#EXT-X-ENDLIST')
-          ? vodContent
-          : `${vodContent}\n#EXT-X-ENDLIST\n`;
+    // vod.m3u8 を index.m3u8 としてアップロード
+    const vodPath = path.join(env.DATA_DIR, id, "vod.m3u8");
+    try {
+      const vodContent = await fs.readFile(vodPath, "utf-8");
+      const finalContent = vodContent.includes("#EXT-X-ENDLIST")
+        ? vodContent
+        : `${vodContent}\n#EXT-X-ENDLIST\n`;
 
-        const indexPath = path.join(env.DATA_DIR, id, 'index.m3u8');
-        await fs.writeFile(indexPath, finalContent);
-      } catch {
-        // VODファイルがない場合は無視
-      }
-
-      await flushQueue();
-
-      const durationSeconds = session?.startedAt
-        ? Math.floor(Date.now() / 1000) - session.startedAt
-        : 0;
-
-      await db.endSession(id, durationSeconds);
-
-      return c.json({ success: true });
+      const indexPath = path.join(env.DATA_DIR, id, "index.m3u8");
+      await fs.writeFile(indexPath, finalContent);
+    } catch {
+      // VODファイルがない場合は無視
     }
-  )
+
+    await flushQueue();
+
+    const durationSeconds = session?.startedAt
+      ? Math.floor(Date.now() / 1000) - session.startedAt
+      : 0;
+
+    await db.endSession(id, durationSeconds);
+
+    return c.json({ success: true });
+  })
 
   // PUT /api/sessions/:id/schedule - スケジュール設定
   .put(
-    '/:id/schedule',
-    vValidator('param', v.object({ id: SessionIdSchema })),
+    "/:id/schedule",
+    vValidator("param", v.object({ id: SessionIdSchema })),
     vValidator(
-      'json',
+      "json",
       v.object({
         scheduledAt: v.pipe(v.number(), v.integer(), v.minValue(0)),
         title: v.optional(v.nullable(v.string())),
-      })
+      }),
     ),
     async (c) => {
-      const { id } = c.req.valid('param');
-      const { scheduledAt, title } = c.req.valid('json');
+      const { id } = c.req.valid("param");
+      const { scheduledAt, title } = c.req.valid("json");
 
       await db.updateSession(id, { scheduledAt, title });
 
       return c.json({ success: true });
-    }
+    },
   );
 ```
 
 ### 9.3 トラックルート（apps/admin/server/src/routes/tracks.ts）
 
 ```typescript
-import { Hono } from 'hono';
-import { vValidator } from '@hono/valibot-validator';
-import * as v from 'valibot';
-import { SessionIdSchema, CreateTrackSchema, UpdateTrackSchema } from '@listen/shared';
-import { db } from '../services/db';
+import { Hono } from "hono";
+import { vValidator } from "@hono/valibot-validator";
+import * as v from "valibot";
+import { SessionIdSchema, CreateTrackSchema, UpdateTrackSchema } from "@listen/shared";
+import { db } from "../services/db";
 
 export const tracksRoutes = new Hono()
   // GET /api/tracks/:sessionId - 一覧取得
-  .get(
-    '/:sessionId',
-    vValidator('param', v.object({ sessionId: SessionIdSchema })),
-    async (c) => {
-      const { sessionId } = c.req.valid('param');
-      const tracks = await db.getTracks(sessionId);
+  .get("/:sessionId", vValidator("param", v.object({ sessionId: SessionIdSchema })), async (c) => {
+    const { sessionId } = c.req.valid("param");
+    const tracks = await db.getTracks(sessionId);
 
-      return c.json({
-        sessionId,
-        tracks: tracks.map((t) => ({
-          id: t.id,
-          position: t.position,
-          timestampSeconds: t.timestampSeconds,
-          artist: t.artist,
-          title: t.title,
-          label: t.label,
-        })),
-      });
-    }
-  )
+    return c.json({
+      sessionId,
+      tracks: tracks.map((t) => ({
+        id: t.id,
+        position: t.position,
+        timestampSeconds: t.timestampSeconds,
+        artist: t.artist,
+        title: t.title,
+        label: t.label,
+      })),
+    });
+  })
 
   // POST /api/tracks/:sessionId - 作成
   .post(
-    '/:sessionId',
-    vValidator('param', v.object({ sessionId: SessionIdSchema })),
-    vValidator('json', CreateTrackSchema),
+    "/:sessionId",
+    vValidator("param", v.object({ sessionId: SessionIdSchema })),
+    vValidator("json", CreateTrackSchema),
     async (c) => {
-      const { sessionId } = c.req.valid('param');
-      const data = c.req.valid('json');
+      const { sessionId } = c.req.valid("param");
+      const data = c.req.valid("json");
 
       const [track] = await db.createTrack({ ...data, sessionId });
 
@@ -616,25 +598,25 @@ export const tracksRoutes = new Hono()
           title: track.title,
           label: track.label,
         },
-        201
+        201,
       );
-    }
+    },
   )
 
   // PUT /api/tracks/:sessionId/:trackId - 更新
   .put(
-    '/:sessionId/:trackId',
+    "/:sessionId/:trackId",
     vValidator(
-      'param',
+      "param",
       v.object({
         sessionId: SessionIdSchema,
         trackId: v.pipe(v.string(), v.transform(Number)),
-      })
+      }),
     ),
-    vValidator('json', UpdateTrackSchema),
+    vValidator("json", UpdateTrackSchema),
     async (c) => {
-      const { trackId } = c.req.valid('param');
-      const data = c.req.valid('json');
+      const { trackId } = c.req.valid("param");
+      const data = c.req.valid("json");
 
       const [track] = await db.updateTrack(trackId, data);
 
@@ -646,25 +628,25 @@ export const tracksRoutes = new Hono()
         title: track.title,
         label: track.label,
       });
-    }
+    },
   )
 
   // DELETE /api/tracks/:sessionId/:trackId - 削除
   .delete(
-    '/:sessionId/:trackId',
+    "/:sessionId/:trackId",
     vValidator(
-      'param',
+      "param",
       v.object({
         sessionId: SessionIdSchema,
         trackId: v.pipe(v.string(), v.transform(Number)),
-      })
+      }),
     ),
     async (c) => {
-      const { trackId } = c.req.valid('param');
+      const { trackId } = c.req.valid("param");
       await db.deleteTrack(trackId);
 
       return c.json({ success: true });
-    }
+    },
   );
 ```
 
@@ -675,30 +657,25 @@ export const tracksRoutes = new Hono()
 ### 10.1 Hono RPC クライアント（apps/admin/client/src/lib/client.ts）
 
 ```typescript
-import { hc } from 'hono/client';
-import type { AppType } from '../../server/src';
+import { hc } from "hono/client";
+import type { AppType } from "../../server/src";
 
 // Hono RPC クライアント作成
-const baseUrl = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+const baseUrl = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
 export const client = hc<AppType>(baseUrl);
 
 // 型ヘルパー（レスポンス型を取得）
 export type InferResponseType<T> = T extends () => Promise<Response>
-  ? Awaited<ReturnType<Awaited<ReturnType<T>>['json']>>
+  ? Awaited<ReturnType<Awaited<ReturnType<T>>["json"]>>
   : never;
 ```
 
 ### 10.2 TanStack Query フック（apps/admin/client/src/lib/queries.ts）
 
 ```typescript
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  type UseQueryOptions,
-} from '@tanstack/react-query';
-import { client, type InferResponseType } from './client';
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
+import { client, type InferResponseType } from "./client";
 
 // ============================================================
 // Session Queries
@@ -707,11 +684,11 @@ import { client, type InferResponseType } from './client';
 // セッション取得
 export function useSession(id: string) {
   return useQuery({
-    queryKey: ['session', id],
+    queryKey: ["session", id],
     queryFn: async () => {
-      const res = await client.api.sessions[':id'].$get({ param: { id } });
+      const res = await client.api.sessions[":id"].$get({ param: { id } });
       if (!res.ok) {
-        throw new Error('Failed to fetch session');
+        throw new Error("Failed to fetch session");
       }
       return res.json();
     },
@@ -720,7 +697,7 @@ export function useSession(id: string) {
 }
 
 // セッション型（推論）
-export type Session = InferResponseType<typeof client.api.sessions[':id']['$get']>;
+export type Session = InferResponseType<(typeof client.api.sessions)[":id"]["$get"]>;
 
 // セッション作成
 export function useCreateSession() {
@@ -730,12 +707,12 @@ export function useCreateSession() {
     mutationFn: async () => {
       const res = await client.api.sessions.$post();
       if (!res.ok) {
-        throw new Error('Failed to create session');
+        throw new Error("Failed to create session");
       }
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
       return data;
     },
   });
@@ -747,17 +724,17 @@ export function useStartSession(id: string) {
 
   return useMutation({
     mutationFn: async () => {
-      const res = await client.api.sessions[':id'].start.$post({
+      const res = await client.api.sessions[":id"].start.$post({
         param: { id },
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error('error' in error ? error.error : 'Failed to start');
+        throw new Error("error" in error ? error.error : "Failed to start");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['session', id] });
+      queryClient.invalidateQueries({ queryKey: ["session", id] });
     },
   });
 }
@@ -768,16 +745,16 @@ export function useStopSession(id: string) {
 
   return useMutation({
     mutationFn: async () => {
-      const res = await client.api.sessions[':id'].stop.$post({
+      const res = await client.api.sessions[":id"].stop.$post({
         param: { id },
       });
       if (!res.ok) {
-        throw new Error('Failed to stop');
+        throw new Error("Failed to stop");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['session', id] });
+      queryClient.invalidateQueries({ queryKey: ["session", id] });
     },
   });
 }
@@ -788,17 +765,17 @@ export function useUpdateSchedule(id: string) {
 
   return useMutation({
     mutationFn: async (data: { scheduledAt: number; title?: string | null }) => {
-      const res = await client.api.sessions[':id'].schedule.$put({
+      const res = await client.api.sessions[":id"].schedule.$put({
         param: { id },
         json: data,
       });
       if (!res.ok) {
-        throw new Error('Failed to update schedule');
+        throw new Error("Failed to update schedule");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['session', id] });
+      queryClient.invalidateQueries({ queryKey: ["session", id] });
     },
   });
 }
@@ -810,13 +787,13 @@ export function useUpdateSchedule(id: string) {
 // トラック一覧取得
 export function useTracks(sessionId: string) {
   return useQuery({
-    queryKey: ['tracks', sessionId],
+    queryKey: ["tracks", sessionId],
     queryFn: async () => {
-      const res = await client.api.tracks[':sessionId'].$get({
+      const res = await client.api.tracks[":sessionId"].$get({
         param: { sessionId },
       });
       if (!res.ok) {
-        throw new Error('Failed to fetch tracks');
+        throw new Error("Failed to fetch tracks");
       }
       return res.json();
     },
@@ -824,9 +801,7 @@ export function useTracks(sessionId: string) {
 }
 
 // トラック型（推論）
-export type TracksResponse = InferResponseType<
-  typeof client.api.tracks[':sessionId']['$get']
->;
+export type TracksResponse = InferResponseType<(typeof client.api.tracks)[":sessionId"]["$get"]>;
 
 // トラック作成
 export function useCreateTrack(sessionId: string) {
@@ -840,17 +815,17 @@ export function useCreateTrack(sessionId: string) {
       title: string;
       label: string | null;
     }) => {
-      const res = await client.api.tracks[':sessionId'].$post({
+      const res = await client.api.tracks[":sessionId"].$post({
         param: { sessionId },
         json: data,
       });
       if (!res.ok) {
-        throw new Error('Failed to create track');
+        throw new Error("Failed to create track");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tracks', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["tracks", sessionId] });
     },
   });
 }
@@ -873,17 +848,17 @@ export function useUpdateTrack(sessionId: string) {
         label: string | null;
       }>;
     }) => {
-      const res = await client.api.tracks[':sessionId'][':trackId'].$put({
+      const res = await client.api.tracks[":sessionId"][":trackId"].$put({
         param: { sessionId, trackId: String(trackId) },
         json: data,
       });
       if (!res.ok) {
-        throw new Error('Failed to update track');
+        throw new Error("Failed to update track");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tracks', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["tracks", sessionId] });
     },
   });
 }
@@ -894,16 +869,16 @@ export function useDeleteTrack(sessionId: string) {
 
   return useMutation({
     mutationFn: async (trackId: number) => {
-      const res = await client.api.tracks[':sessionId'][':trackId'].$delete({
+      const res = await client.api.tracks[":sessionId"][":trackId"].$delete({
         param: { sessionId, trackId: String(trackId) },
       });
       if (!res.ok) {
-        throw new Error('Failed to delete track');
+        throw new Error("Failed to delete track");
       }
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tracks', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["tracks", sessionId] });
     },
   });
 }
@@ -912,13 +887,13 @@ export function useDeleteTrack(sessionId: string) {
 ### 10.3 配信管理画面（apps/admin/client/src/routes/rec.$id.tsx）
 
 ```tsx
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useSession, useStartSession, useStopSession } from '@/lib/queries';
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useSession, useStartSession, useStopSession } from "@/lib/queries";
 
-export const Route = createFileRoute('/rec/$id')({
+export const Route = createFileRoute("/rec/$id")({
   component: RecordingPage,
 });
 
@@ -934,7 +909,7 @@ function RecordingPage() {
     return <div className="text-zinc-400">Loading...</div>;
   }
 
-  if (error || !session || 'error' in session) {
+  if (error || !session || "error" in session) {
     return <div className="text-red-400">Session not found</div>;
   }
 
@@ -945,16 +920,13 @@ function RecordingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Recording: {id}</h1>
-        <Badge
-          variant={session.state === 'live' ? 'destructive' : 'secondary'}
-          className="text-sm"
-        >
+        <Badge variant={session.state === "live" ? "destructive" : "secondary"} className="text-sm">
           {session.state}
         </Badge>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-zinc-800 bg-zinc-900">
           <CardHeader>
             <CardTitle className="text-zinc-100">Status</CardTitle>
           </CardHeader>
@@ -965,7 +937,7 @@ function RecordingPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-400">Running</span>
-              <span className="font-medium">{session.running ? 'Yes' : 'No'}</span>
+              <span className="font-medium">{session.running ? "Yes" : "No"}</span>
             </div>
             {session.title && (
               <div className="flex justify-between">
@@ -976,25 +948,25 @@ function RecordingPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-zinc-800 bg-zinc-900">
           <CardHeader>
             <CardTitle className="text-zinc-100">URLs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <span className="text-zinc-400 text-sm">Listener URL</span>
+              <span className="text-sm text-zinc-400">Listener URL</span>
               <a
                 href={listenerUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="block text-blue-400 hover:underline truncate"
+                className="block truncate text-blue-400 hover:underline"
               >
                 {listenerUrl}
               </a>
             </div>
             <div>
-              <span className="text-zinc-400 text-sm">HLS URL</span>
-              <code className="block text-xs text-zinc-300 bg-zinc-800 p-2 rounded truncate">
+              <span className="text-sm text-zinc-400">HLS URL</span>
+              <code className="block truncate rounded bg-zinc-800 p-2 text-xs text-zinc-300">
                 {hlsUrl}
               </code>
             </div>
@@ -1010,15 +982,15 @@ function RecordingPage() {
             onClick={() => stopMutation.mutate()}
             disabled={stopMutation.isPending}
           >
-            {stopMutation.isPending ? 'Stopping...' : '⏹ Stop'}
+            {stopMutation.isPending ? "Stopping..." : "⏹ Stop"}
           </Button>
         ) : (
           <Button
             size="lg"
             onClick={() => startMutation.mutate()}
-            disabled={startMutation.isPending || session.state === 'ended'}
+            disabled={startMutation.isPending || session.state === "ended"}
           >
-            {startMutation.isPending ? 'Starting...' : '▶ Start'}
+            {startMutation.isPending ? "Starting..." : "▶ Start"}
           </Button>
         )}
 
@@ -1029,12 +1001,8 @@ function RecordingPage() {
         </Button>
       </div>
 
-      {startMutation.error && (
-        <p className="text-red-400 text-sm">{startMutation.error.message}</p>
-      )}
-      {stopMutation.error && (
-        <p className="text-red-400 text-sm">{stopMutation.error.message}</p>
-      )}
+      {startMutation.error && <p className="text-sm text-red-400">{startMutation.error.message}</p>}
+      {stopMutation.error && <p className="text-sm text-red-400">{stopMutation.error.message}</p>}
     </div>
   );
 }
@@ -1043,28 +1011,23 @@ function RecordingPage() {
 ### 10.4 トラックリスト編集画面（apps/admin/client/src/routes/tracks.$id.tsx）
 
 ```tsx
-import { useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Trash2, Plus, ArrowLeft } from 'lucide-react';
-import {
-  useTracks,
-  useCreateTrack,
-  useUpdateTrack,
-  useDeleteTrack,
-} from '@/lib/queries';
+} from "@/components/ui/dialog";
+import { Trash2, Plus, ArrowLeft } from "lucide-react";
+import { useTracks, useCreateTrack, useUpdateTrack, useDeleteTrack } from "@/lib/queries";
 
-export const Route = createFileRoute('/tracks/$id')({
+export const Route = createFileRoute("/tracks/$id")({
   component: TracksPage,
 });
 
@@ -1079,9 +1042,9 @@ function TracksPage() {
   const [form, setForm] = useState({
     timestampMinutes: 0,
     timestampSeconds: 0,
-    artist: '',
-    title: '',
-    label: '',
+    artist: "",
+    title: "",
+    label: "",
   });
 
   const handleSubmit = () => {
@@ -1102,12 +1065,12 @@ function TracksPage() {
           setForm({
             timestampMinutes: 0,
             timestampSeconds: 0,
-            artist: '',
-            title: '',
-            label: '',
+            artist: "",
+            title: "",
+            label: "",
           });
         },
-      }
+      },
     );
   };
 
@@ -1126,17 +1089,17 @@ function TracksPage() {
         <h1 className="text-2xl font-bold">Tracklist: {id}</h1>
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="border-zinc-800 bg-zinc-900">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-zinc-100">Tracks</CardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="mr-1 h-4 w-4" />
                 Add Track
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-zinc-900 border-zinc-800">
+            <DialogContent className="border-zinc-800 bg-zinc-900">
               <DialogHeader>
                 <DialogTitle>Add Track</DialogTitle>
               </DialogHeader>
@@ -1193,7 +1156,7 @@ function TracksPage() {
                   disabled={!form.title || createMutation.isPending}
                   className="w-full"
                 >
-                  {createMutation.isPending ? 'Adding...' : 'Add Track'}
+                  {createMutation.isPending ? "Adding..." : "Add Track"}
                 </Button>
               </div>
             </DialogContent>
@@ -1201,24 +1164,20 @@ function TracksPage() {
         </CardHeader>
         <CardContent>
           {data?.tracks.length === 0 ? (
-            <p className="text-zinc-400 text-center py-8">No tracks yet</p>
+            <p className="py-8 text-center text-zinc-400">No tracks yet</p>
           ) : (
             <ul className="divide-y divide-zinc-800">
               {data?.tracks.map((track) => (
                 <li key={track.id} className="flex items-center gap-4 py-3">
-                  <span className="text-zinc-400 font-mono w-12 text-sm">
+                  <span className="w-12 font-mono text-sm text-zinc-400">
                     {formatTimestamp(track.timestampSeconds)}
                   </span>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate">
-                      {track.artist && (
-                        <span className="text-zinc-400">{track.artist} - </span>
-                      )}
+                      {track.artist && <span className="text-zinc-400">{track.artist} - </span>}
                       {track.title}
                     </p>
-                    {track.label && (
-                      <p className="text-sm text-zinc-500">[{track.label}]</p>
-                    )}
+                    {track.label && <p className="text-sm text-zinc-500">[{track.label}]</p>}
                   </div>
                   <Button
                     variant="ghost"
@@ -1241,7 +1200,7 @@ function TracksPage() {
 function formatTimestamp(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 ```
 
@@ -1252,33 +1211,33 @@ function formatTimestamp(seconds: number): string {
 ### 11.1 エントリーポイント + AppType エクスポート（apps/web/worker/src/index.ts）
 
 ```typescript
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { sessionsRoutes } from './routes/sessions';
-import { tracksRoutes } from './routes/tracks';
-import { subscribeRoutes } from './routes/subscribe';
-import { billingRoutes } from './routes/billing';
-import { meRoutes } from './routes/me';
-import { createDb } from './lib/db';
-import type { Env, Variables } from './types';
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { sessionsRoutes } from "./routes/sessions";
+import { tracksRoutes } from "./routes/tracks";
+import { subscribeRoutes } from "./routes/subscribe";
+import { billingRoutes } from "./routes/billing";
+import { meRoutes } from "./routes/me";
+import { createDb } from "./lib/db";
+import type { Env, Variables } from "./types";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-app.use('*', cors());
+app.use("*", cors());
 
 // DB インスタンスをコンテキストに設定
-app.use('*', async (c, next) => {
-  c.set('db', createDb(c.env.DB));
+app.use("*", async (c, next) => {
+  c.set("db", createDb(c.env.DB));
   await next();
 });
 
 // ルートをチェーンで接続（型推論のため）
 const routes = app
-  .route('/sessions', sessionsRoutes)
-  .route('/tracks', tracksRoutes)
-  .route('/subscribe', subscribeRoutes)
-  .route('/billing', billingRoutes)
-  .route('/me', meRoutes);
+  .route("/sessions", sessionsRoutes)
+  .route("/tracks", tracksRoutes)
+  .route("/subscribe", subscribeRoutes)
+  .route("/billing", billingRoutes)
+  .route("/me", meRoutes);
 
 // AppType をエクスポート（クライアントで使用）
 export type AppType = typeof routes;
@@ -1289,50 +1248,50 @@ export default app;
 ### 11.2 セッションルート（apps/web/worker/src/routes/sessions.ts）
 
 ```typescript
-import { Hono } from 'hono';
-import { vValidator } from '@hono/valibot-validator';
-import { eq, and, gt } from 'drizzle-orm';
-import * as v from 'valibot';
-import { sessions } from '@listen/db';
-import { SessionIdSchema } from '@listen/shared';
-import { authMiddleware } from '../middleware/auth';
-import type { Env, Variables } from '../types';
+import { Hono } from "hono";
+import { vValidator } from "@hono/valibot-validator";
+import { eq, and, gt } from "drizzle-orm";
+import * as v from "valibot";
+import { sessions } from "@listen/db";
+import { SessionIdSchema } from "@listen/shared";
+import { authMiddleware } from "../middleware/auth";
+import type { Env, Variables } from "../types";
 
 export const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   // GET /sessions/live
-  .get('/live', async (c) => {
-    const db = c.get('db');
+  .get("/live", async (c) => {
+    const db = c.get("db");
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.state, 'live'),
+      where: eq(sessions.state, "live"),
     });
 
     return c.json({ session: session ?? null });
   })
 
   // GET /sessions/archive
-  .get('/archive', authMiddleware({ required: false }), async (c) => {
-    const db = c.get('db');
-    const profile = c.get('profile');
+  .get("/archive", authMiddleware({ required: false }), async (c) => {
+    const db = c.get("db");
+    const profile = c.get("profile");
     const isPremium = profile?.isPremium === true;
     const now = Math.floor(Date.now() / 1000);
 
-    let result: typeof sessions.$inferSelect[];
+    let result: (typeof sessions.$inferSelect)[];
     let totalCount: number;
 
     if (isPremium) {
       result = await db.query.sessions.findMany({
-        where: eq(sessions.state, 'ended'),
+        where: eq(sessions.state, "ended"),
         orderBy: (sessions, { desc }) => [desc(sessions.endedAt)],
       });
       totalCount = result.length;
     } else {
       result = await db.query.sessions.findMany({
-        where: and(eq(sessions.state, 'ended'), gt(sessions.expiresAt, now)),
+        where: and(eq(sessions.state, "ended"), gt(sessions.expiresAt, now)),
         orderBy: (sessions, { desc }) => [desc(sessions.endedAt)],
       });
 
       const allEnded = await db.query.sessions.findMany({
-        where: eq(sessions.state, 'ended'),
+        where: eq(sessions.state, "ended"),
       });
       totalCount = allEnded.length;
     }
@@ -1354,13 +1313,13 @@ export const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>(
 
   // GET /sessions/:id
   .get(
-    '/:id',
-    vValidator('param', v.object({ id: SessionIdSchema })),
+    "/:id",
+    vValidator("param", v.object({ id: SessionIdSchema })),
     authMiddleware({ required: false }),
     async (c) => {
-      const { id } = c.req.valid('param');
-      const db = c.get('db');
-      const profile = c.get('profile');
+      const { id } = c.req.valid("param");
+      const db = c.get("db");
+      const profile = c.get("profile");
       const isPremium = profile?.isPremium === true;
 
       const session = await db.query.sessions.findFirst({
@@ -1368,22 +1327,22 @@ export const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>(
       });
 
       if (!session) {
-        return c.json({ error: 'Not found' }, 404);
+        return c.json({ error: "Not found" }, 404);
       }
 
       const now = Math.floor(Date.now() / 1000);
 
       let canWatch = false;
-      let reason: 'expired' | null = null;
+      let reason: "expired" | null = null;
 
-      if (session.state === 'live') {
+      if (session.state === "live") {
         canWatch = true;
       } else if (session.expiresAt && session.expiresAt > now) {
         canWatch = true;
       } else if (isPremium) {
         canWatch = true;
       } else {
-        reason = 'expired';
+        reason = "expired";
       }
 
       return c.json({
@@ -1397,23 +1356,25 @@ export const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>(
         durationSeconds: session.durationSeconds,
         canWatch,
         reason,
-        upgradeUrl: canWatch ? null : '/settings',
+        upgradeUrl: canWatch ? null : "/settings",
       });
-    }
+    },
   );
 ```
 
 ### 11.3 Me ルート（apps/web/worker/src/routes/me.ts）
 
 ```typescript
-import { Hono } from 'hono';
-import { authMiddleware } from '../middleware/auth';
-import type { Env, Variables } from '../types';
+import { Hono } from "hono";
+import { authMiddleware } from "../middleware/auth";
+import type { Env, Variables } from "../types";
 
-export const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
-  .get('/', authMiddleware({ required: false }), async (c) => {
-    const user = c.get('user');
-    const profile = c.get('profile');
+export const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().get(
+  "/",
+  authMiddleware({ required: false }),
+  async (c) => {
+    const user = c.get("user");
+    const profile = c.get("profile");
 
     return c.json({
       user: user ? { id: user.id, email: user.email } : null,
@@ -1424,7 +1385,8 @@ export const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
           }
         : null,
     });
-  });
+  },
+);
 ```
 
 ---
@@ -1434,10 +1396,10 @@ export const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 ### 12.1 Hono RPC クライアント（apps/web/client/src/lib/client.ts）
 
 ```typescript
-import { hc } from 'hono/client';
-import type { AppType } from '../../worker/src';
+import { hc } from "hono/client";
+import type { AppType } from "../../worker/src";
 
-const baseUrl = import.meta.env.VITE_API_BASE || '';
+const baseUrl = import.meta.env.VITE_API_BASE || "";
 
 // 認証トークン付きクライアント作成関数
 export function createClient(getToken?: () => Promise<string | null>) {
@@ -1449,7 +1411,7 @@ export function createClient(getToken?: () => Promise<string | null>) {
       if (getToken) {
         const token = await getToken();
         if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
+          headers.set("Authorization", `Bearer ${token}`);
         }
       }
 
@@ -1464,16 +1426,16 @@ export const publicClient = hc<AppType>(baseUrl);
 // 型ヘルパー
 export type Client = ReturnType<typeof createClient>;
 export type InferResponseType<T> = T extends () => Promise<Response>
-  ? Awaited<ReturnType<Awaited<ReturnType<T>>['json']>>
+  ? Awaited<ReturnType<Awaited<ReturnType<T>>["json"]>>
   : never;
 ```
 
 ### 12.2 TanStack Query フック（apps/web/client/src/lib/queries.ts）
 
 ```typescript
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
-import { createClient, publicClient, type InferResponseType } from './client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
+import { createClient, publicClient, type InferResponseType } from "./client";
 
 // 認証付きクライアントを取得するフック
 function useClient() {
@@ -1488,10 +1450,10 @@ function useClient() {
 // ライブセッション取得
 export function useLiveSession() {
   return useQuery({
-    queryKey: ['session', 'live'],
+    queryKey: ["session", "live"],
     queryFn: async () => {
       const res = await publicClient.sessions.live.$get();
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
     refetchInterval: 10000, // 10秒ごと
@@ -1503,17 +1465,17 @@ export function useSession(id: string) {
   const client = useClient();
 
   return useQuery({
-    queryKey: ['session', id],
+    queryKey: ["session", id],
     queryFn: async () => {
-      const res = await client.sessions[':id'].$get({ param: { id } });
-      if (!res.ok) throw new Error('Failed to fetch');
+      const res = await client.sessions[":id"].$get({ param: { id } });
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
   });
 }
 
 export type SessionResponse = InferResponseType<
-  ReturnType<typeof createClient>['sessions'][':id']['$get']
+  ReturnType<typeof createClient>["sessions"][":id"]["$get"]
 >;
 
 // アーカイブ一覧取得
@@ -1521,17 +1483,17 @@ export function useArchive() {
   const client = useClient();
 
   return useQuery({
-    queryKey: ['archive'],
+    queryKey: ["archive"],
     queryFn: async () => {
       const res = await client.sessions.archive.$get();
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
   });
 }
 
 export type ArchiveResponse = InferResponseType<
-  ReturnType<typeof createClient>['sessions']['archive']['$get']
+  ReturnType<typeof createClient>["sessions"]["archive"]["$get"]
 >;
 
 // ============================================================
@@ -1543,16 +1505,16 @@ export function useTracks(sessionId: string, enabled = true) {
   const client = useClient();
 
   return useQuery({
-    queryKey: ['tracks', sessionId],
+    queryKey: ["tracks", sessionId],
     queryFn: async () => {
-      const res = await client.tracks[':sessionId'].$get({
+      const res = await client.tracks[":sessionId"].$get({
         param: { sessionId },
       });
       if (!res.ok) {
         if (res.status === 403) {
-          throw new Error('Premium required');
+          throw new Error("Premium required");
         }
-        throw new Error('Failed to fetch');
+        throw new Error("Failed to fetch");
       }
       return res.json();
     },
@@ -1561,7 +1523,7 @@ export function useTracks(sessionId: string, enabled = true) {
 }
 
 export type TracksResponse = InferResponseType<
-  ReturnType<typeof createClient>['tracks'][':sessionId']['$get']
+  ReturnType<typeof createClient>["tracks"][":sessionId"]["$get"]
 >;
 
 // ============================================================
@@ -1574,17 +1536,17 @@ export function useMe() {
   const { isSignedIn } = useAuth();
 
   return useQuery({
-    queryKey: ['me'],
+    queryKey: ["me"],
     queryFn: async () => {
       const res = await client.me.$get();
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
     enabled: isSignedIn,
   });
 }
 
-export type MeResponse = InferResponseType<ReturnType<typeof createClient>['me']['$get']>;
+export type MeResponse = InferResponseType<ReturnType<typeof createClient>["me"]["$get"]>;
 
 // ============================================================
 // Subscribe Mutations
@@ -1600,7 +1562,7 @@ export function useSubscribe() {
       const res = await publicClient.subscribe.$post({ json: data });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error('error' in error ? error.error : 'Failed to subscribe');
+        throw new Error("error" in error ? error.error : "Failed to subscribe");
       }
       return res.json();
     },
@@ -1617,7 +1579,7 @@ export function useCreateCheckout() {
   return useMutation({
     mutationFn: async () => {
       const res = await client.billing.checkout.$post();
-      if (!res.ok) throw new Error('Failed to create checkout');
+      if (!res.ok) throw new Error("Failed to create checkout");
       return res.json();
     },
   });
@@ -1627,18 +1589,18 @@ export function useCreateCheckout() {
 ### 12.3 セッション視聴ページ（apps/web/client/src/routes/s.$id.tsx）
 
 ```tsx
-import { useState, useCallback } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { useAuth } from '@clerk/clerk-react';
-import { Player } from '@/components/Player';
-import { TrackList } from '@/components/TrackList';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Lock } from 'lucide-react';
-import { useSession, useTracks, useMe } from '@/lib/queries';
+import { useState, useCallback } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useAuth } from "@clerk/clerk-react";
+import { Player } from "@/components/Player";
+import { TrackList } from "@/components/TrackList";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Lock } from "lucide-react";
+import { useSession, useTracks, useMe } from "@/lib/queries";
 
-export const Route = createFileRoute('/s/$id')({
+export const Route = createFileRoute("/s/$id")({
   component: SessionPage,
 });
 
@@ -1652,7 +1614,7 @@ function SessionPage() {
   const { data: me } = useMe();
 
   const isPremium = me?.profile?.isPremium ?? false;
-  const canWatch = session && 'canWatch' in session ? session.canWatch : false;
+  const canWatch = session && "canWatch" in session ? session.canWatch : false;
 
   const { data: tracks } = useTracks(id, isPremium && canWatch);
 
@@ -1663,30 +1625,30 @@ function SessionPage() {
 
   if (sessionLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
-  if (!session || 'error' in session) {
+  if (!session || "error" in session) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-destructive">Session not found</div>
       </div>
     );
   }
 
   // 期限切れ（非課金）
-  if (!canWatch && session.reason === 'expired') {
+  if (!canWatch && session.reason === "expired") {
     return (
-      <div className="max-w-lg mx-auto space-y-6">
+      <div className="mx-auto max-w-lg space-y-6">
         <Card className="bg-muted/30 border-border">
           <CardHeader className="text-center">
-            <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <Lock className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
             <CardTitle>Archive Expired</CardTitle>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
+          <CardContent className="space-y-4 text-center">
             <p className="text-muted-foreground">
               The free viewing period for this archive has ended.
             </p>
@@ -1707,16 +1669,14 @@ function SessionPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
-            {session.title || `Session ${id}`}
-          </h1>
+          <h1 className="text-2xl font-bold">{session.title || `Session ${id}`}</h1>
           <p className="text-muted-foreground">{id}</p>
         </div>
-        <Badge variant={session.state === 'live' ? 'destructive' : 'secondary'}>
-          {session.state === 'live' ? '● LIVE' : 'Archive'}
+        <Badge variant={session.state === "live" ? "destructive" : "secondary"}>
+          {session.state === "live" ? "● LIVE" : "Archive"}
         </Badge>
       </div>
 
@@ -1728,15 +1688,11 @@ function SessionPage() {
 
       {/* トラックリスト（プレミアム限定） */}
       {isPremium && tracks?.tracks ? (
-        <TrackList
-          tracks={tracks.tracks}
-          currentTime={currentTime}
-          onSeek={handleSeek}
-        />
+        <TrackList tracks={tracks.tracks} currentTime={currentTime} onSeek={handleSeek} />
       ) : (
         <Card className="bg-muted/20 border-border">
           <CardContent className="py-6 text-center">
-            <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <Lock className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
             <p className="text-muted-foreground text-sm">
               Tracklist is available for premium members
             </p>
@@ -1756,13 +1712,13 @@ function SessionPage() {
 ### 12.4 アーカイブ一覧ページ（apps/web/client/src/routes/archive.tsx）
 
 ```tsx
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useArchive, useMe } from '@/lib/queries';
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useArchive, useMe } from "@/lib/queries";
 
-export const Route = createFileRoute('/archive')({
+export const Route = createFileRoute("/archive")({
   component: ArchivePage,
 });
 
@@ -1799,9 +1755,7 @@ function ArchivePage() {
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {session.title || session.id}
-                  </CardTitle>
+                  <CardTitle className="text-lg">{session.title || session.id}</CardTitle>
                   {session.isExpired && !isPremium && (
                     <Badge variant="outline" className="text-xs">
                       Expired
@@ -1810,14 +1764,14 @@ function ArchivePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-muted-foreground mb-3 text-sm">
                   {session.durationSeconds
                     ? formatDuration(session.durationSeconds)
-                    : 'Duration unknown'}
+                    : "Duration unknown"}
                 </p>
                 <Button asChild variant="secondary" size="sm" className="w-full">
                   <Link to="/s/$id" params={{ id: session.id }}>
-                    {session.isExpired && !isPremium ? 'View Details' : 'Listen'}
+                    {session.isExpired && !isPremium ? "View Details" : "Listen"}
                   </Link>
                 </Button>
               </CardContent>
@@ -1829,7 +1783,7 @@ function ArchivePage() {
       {data?.hasMoreArchives && (
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="py-6 text-center">
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="text-muted-foreground mb-3 text-sm">
               Upgrade to Premium to access all {data.premiumArchiveCount} archives
             </p>
             <Button asChild>
@@ -1987,12 +1941,12 @@ pnpm deploy:web    # Worker + Pages
 ```typescript
 // サーバー側（型をエクスポート）
 const app = new Hono()
-  .get('/users', (c) => c.json({ users: [{ id: 1, name: 'Alice' }] }))
-  .get('/users/:id', (c) => {
-    const id = c.req.param('id');
-    return c.json({ id: Number(id), name: 'Alice' });
+  .get("/users", (c) => c.json({ users: [{ id: 1, name: "Alice" }] }))
+  .get("/users/:id", (c) => {
+    const id = c.req.param("id");
+    return c.json({ id: Number(id), name: "Alice" });
   })
-  .post('/users', async (c) => {
+  .post("/users", async (c) => {
     const body = await c.req.json<{ name: string }>();
     return c.json({ id: 2, name: body.name }, 201);
   });
@@ -2000,45 +1954,41 @@ const app = new Hono()
 export type AppType = typeof app;
 
 // クライアント側（型を利用）
-import { hc } from 'hono/client';
-import type { AppType } from './server';
+import { hc } from "hono/client";
+import type { AppType } from "./server";
 
-const client = hc<AppType>('http://localhost:8080');
+const client = hc<AppType>("http://localhost:8080");
 
 // 完全な型推論
 const res1 = await client.users.$get();
 const users = await res1.json(); // { users: { id: number; name: string }[] }
 
-const res2 = await client.users[':id'].$get({ param: { id: '1' } });
+const res2 = await client.users[":id"].$get({ param: { id: "1" } });
 const user = await res2.json(); // { id: number; name: string }
 
-const res3 = await client.users.$post({ json: { name: 'Bob' } });
+const res3 = await client.users.$post({ json: { name: "Bob" } });
 const newUser = await res3.json(); // { id: number; name: string }
 ```
 
 ### A.2 Valibot との組み合わせ
 
 ```typescript
-import { vValidator } from '@hono/valibot-validator';
-import * as v from 'valibot';
+import { vValidator } from "@hono/valibot-validator";
+import * as v from "valibot";
 
 const CreateUserSchema = v.object({
   name: v.pipe(v.string(), v.minLength(1)),
   email: v.pipe(v.string(), v.email()),
 });
 
-const app = new Hono().post(
-  '/users',
-  vValidator('json', CreateUserSchema),
-  async (c) => {
-    const data = c.req.valid('json'); // { name: string; email: string }
-    return c.json({ id: 1, ...data });
-  }
-);
+const app = new Hono().post("/users", vValidator("json", CreateUserSchema), async (c) => {
+  const data = c.req.valid("json"); // { name: string; email: string }
+  return c.json({ id: 1, ...data });
+});
 
 // クライアント側も型安全
 const res = await client.users.$post({
-  json: { name: 'Alice', email: 'alice@example.com' },
+  json: { name: "Alice", email: "alice@example.com" },
 });
 ```
 
@@ -2049,10 +1999,10 @@ const res = await client.users.$post({
 type ApiError = { error: string };
 
 // Union 型でレスポンスを処理
-const res = await client.sessions[':id'].$get({ param: { id } });
+const res = await client.sessions[":id"].$get({ param: { id } });
 
 if (!res.ok) {
-  const error = await res.json() as ApiError;
+  const error = (await res.json()) as ApiError;
   throw new Error(error.error);
 }
 

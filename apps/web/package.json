@@ -3,42 +3,45 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm run --parallel dev:*",
+    "dev": "run-p dev:*",
     "dev:worker": "wrangler dev --config worker/wrangler.toml",
     "dev:client": "vite --config client/vite.config.ts",
     "build": "pnpm run build:worker && pnpm run build:client",
     "build:worker": "wrangler deploy --dry-run --config worker/wrangler.toml",
     "build:client": "vite build --config client/vite.config.ts",
-    "deploy": "wrangler deploy --config worker/wrangler.toml && wrangler pages deploy client/dist"
+    "deploy": "wrangler deploy --config worker/wrangler.toml && wrangler pages deploy client/dist",
+    "typecheck": "run-p typecheck:*",
+    "typecheck:client": "tsgo -p client --noEmit",
+    "typecheck:worker": "tsgo -p worker --noEmit"
   },
   "dependencies": {
-    "@clerk/backend": "^1.24.0",
-    "@clerk/clerk-react": "^5.22.0",
+    "@clerk/backend": "^2.29.6",
+    "@clerk/clerk-react": "^5.60.0",
     "@hono/valibot-validator": "catalog:",
     "@listen/db": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "clsx": "^2.1.1",
     "drizzle-orm": "catalog:",
-    "hls.js": "^1.6.0",
+    "hls.js": "^1.6.15",
     "hono": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tailwind-merge": "^2.6.0",
+    "tailwind-merge": "^3.4.0",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250121.0",
-    "@tailwindcss/vite": "^4.0.0",
+    "@cloudflare/workers-types": "^4.20260129.0",
+    "@tailwindcss/vite": "^4.1.18",
     "@tanstack/devtools-vite": "^0.4.1",
-    "@tanstack/router-plugin": "^1.97.0",
-    "@types/node": "^22.0.0",
+    "@tanstack/router-plugin": "^1.157.16",
+    "@types/node": "^25.1.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:",
     "vite": "catalog:",
-    "wrangler": "^3.105.0"
+    "wrangler": "^4.61.1"
   }
 }

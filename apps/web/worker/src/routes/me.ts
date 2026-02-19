@@ -1,25 +1,18 @@
-import { Hono } from "hono";
 import type { Env, Variables } from "../types";
+import { Hono } from "hono";
 
-const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
+const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().get("/", async (c) => {
+  const userId = c.get("userId");
+  const userEmail = c.get("userEmail");
+  const isPremium = c.get("isPremium") ?? false;
 
-// Get current user info
-meRoutes.get("/", async (c) => {
-	const userId = c.get("userId");
-	const userEmail = c.get("userEmail");
-	const isPremium = c.get("isPremium") ?? false;
-
-	if (!userId) {
-		return c.json({ user: undefined });
-	}
-
-	return c.json({
-		user: {
-			id: userId,
-			email: userEmail,
-			isPremium,
-		},
-	});
+  return c.json({
+    user: {
+      id: userId,
+      email: userEmail,
+      isPremium,
+    },
+  });
 });
 
 export { meRoutes };

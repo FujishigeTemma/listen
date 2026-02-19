@@ -115,9 +115,7 @@
       "indexes": {
         "subscribers_email_unique": {
           "name": "subscribers_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -185,12 +183,8 @@
           "name": "tracks_session_id_sessions_id_fk",
           "tableFrom": "tracks",
           "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -1,2 +1,0 @@
-// Shared type definitions
-
