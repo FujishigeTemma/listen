@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "run-p dev:*",
     "dev:server": "tsx watch server/src/index.ts",
-    "dev:client": "vite --config client/vite.config.ts",
+    "dev:client": "vite",
     "build": "pnpm run build:server && pnpm run build:client",
     "build:server": "tsup server/src/index.ts --format esm --dts",
-    "build:client": "vite build --config client/vite.config.ts",
+    "build:client": "vite build",
     "typecheck": "run-p typecheck:*",
     "typecheck:client": "tsgo -p client --noEmit",
     "typecheck:server": "tsgo -p server --noEmit"
