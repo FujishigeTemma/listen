@@ -1,0 +1,44 @@
+{
+  "skill_name": "tanstack-query-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "apps/web/client/src/lib/queries.ts を queryOptions ベースのファクトリパターンにリファクタリングして、TanStack Query v5のベストプラクティスに沿うようにしてください。",
+      "expected_output": "queryOptions() を使ったクエリキーファクトリが作成され、queryKeyの階層構造が適切で、useQuery はファクトリを使用するようになっている",
+      "files": ["apps/web/client/src/lib/queries.ts"],
+      "expectations": [
+        "queryOptions をインポートしている",
+        "クエリキーファクトリオブジェクト（sessionQueries, trackQueries など）が作成されている",
+        "queryKeyが階層構造になっている（例: ['sessions'] -> ['sessions', 'live']）",
+        "useMutation の onSuccess で queryKey ファクトリを使って invalidation している",
+        "TypeScript の型推論を活用し、手動でジェネリクスを指定していない"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "このプロジェクトに新しい useQuery フックを追加してください。管理画面でセッションの録音データのアップロード状態を3秒ごとにポーリングするものです。エラーが起きたらトーストで表示したいです。apps/admin/client/src/lib/queries.ts に追加してください。",
+      "expected_output": "queryOptions パターンを使った新しいクエリが追加され、refetchInterval でポーリングし、エラーハンドリングが適切に行われている",
+      "files": ["apps/admin/client/src/lib/queries.ts"],
+      "expectations": [
+        "queryOptions() を使ってクエリを定義している",
+        "refetchInterval: 3000 が設定されている",
+        "エラーハンドリングが QueryCache のグローバルコールバックか throwOnError で行われ、useQuery の onError コールバックを使っていない",
+        "queryKey にポーリング対象の ID やパラメータが含まれている",
+        "queryFn の返り値の型が明示されているか推論可能である"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "apps/admin/client/src/lib/queries.ts の useStartSession と useStopSession で、optimistic update を実装してセッションの状態がすぐにUIに反映されるようにしてください。ただし、複数回連打された場合のレースコンディションも考慮してください。",
+      "expected_output": "optimistic update が正しく実装され、onMutate でキャンセルとスナップショット、onError でロールバック、onSettled でisMutatingガードを使った invalidation が行われている",
+      "files": ["apps/admin/client/src/lib/queries.ts"],
+      "expectations": [
+        "onMutate で cancelQueries を呼んでいる",
+        "onMutate で以前のデータをスナップショットしている",
+        "onError でスナップショットからロールバックしている",
+        "onSettled で invalidateQueries を呼んでいる",
+        "mutationKey が設定され、isMutating ガードで連打時のレースコンディションに対応している"
+      ]
+    }
+  ]
+}
