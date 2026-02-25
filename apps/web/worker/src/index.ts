@@ -1,4 +1,4 @@
-import type { Env, Variables } from "./types";
+import type { Variables } from "./types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";

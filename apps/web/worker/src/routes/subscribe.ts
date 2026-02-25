@@ -3,7 +3,7 @@ import { subscribers } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import * as v from "valibot";
-import type { Env, Variables } from "../types";
+import type { Variables } from "../types";
 
 import { createDB } from "../lib/db";
 

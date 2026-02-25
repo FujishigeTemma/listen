@@ -1,4 +1,4 @@
-import type { Env, Variables } from "../types";
+import type { Variables } from "../types";
 import { Hono } from "hono";
 
 const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().get("/", async (c) => {
