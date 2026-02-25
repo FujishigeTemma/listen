@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "run-p dev:*",
-    "dev:worker": "wrangler dev --config worker/wrangler.toml",
+    "dev:worker": "wrangler dev",
     "dev:client": "vite --config client/vite.config.ts",
-    "build": "pnpm run build:worker && pnpm run build:client",
-    "build:worker": "wrangler deploy --dry-run --config worker/wrangler.toml",
+    "build": "pnpm run build:client && pnpm run build:worker",
+    "build:worker": "wrangler deploy --dry-run",
     "build:client": "vite build --config client/vite.config.ts",
-    "deploy": "wrangler deploy --config worker/wrangler.toml && wrangler pages deploy client/dist",
+    "deploy": "wrangler deploy",
     "typecheck": "run-p typecheck:*",
     "typecheck:client": "tsgo -p client --noEmit",
     "typecheck:worker": "tsgo -p worker --noEmit"
