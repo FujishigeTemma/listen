@@ -1,0 +1,23 @@
+{
+  "skill_name": "async-react-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "TanStack Routerのファイルベースルーティングを使ったプロジェクトで、/posts ページにフィルター機能を追加したい。フィルターを切り替えるたびにスケルトンが一瞬表示されてチラつくので、stale dataを表示しながらバックグラウンドで新しいデータを取得するようにしたい。useSuspenseQueryを使っている前提で、コンポーネントの設計を教えて。",
+      "expected_output": "startTransitionでフィルターのstate更新をラップし、isPendingでopacityやdata-pending属性を制御するパターンを提示。Suspense fallbackのフラッシュを防ぐ仕組みを説明。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "新しいReact 19 + TanStack Router + TanStack Queryプロジェクトのディレクトリ構成を設計してほしい。認証付きのダッシュボードアプリで、/dashboard、/posts、/posts/:id、/settings のルートがある。各ルート固有のコンポーネントやフックの配置方針も含めて。",
+      "expected_output": "routes/ディレクトリ配下にファイルベースルーティング構造を設計。-components/、-hooks/のプライベートディレクトリ慣習を使用。queries/、api/、components/ui/等の共通ディレクトリも配置。_auth レイアウトルートで認証境界を設定。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "デザインシステムのButtonコンポーネントを作りたい。非同期のアクション（API呼び出し等）を実行するときに、ローディング状態を自動で管理して、処理中はボタンをdisabledにしたい。React 19のuseTransitionを活用した設計にしてほしい。",
+      "expected_output": "action propパターンを使用したButtonコンポーネントを実装。action propはPromiseを返す関数で、内部でstartTransitionにラップ。isPendingでdisabled状態とSpinner表示を制御。data-pending属性とaria-busy属性を設定。",
+      "files": []
+    }
+  ]
+}
