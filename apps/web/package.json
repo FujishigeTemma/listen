@@ -3,12 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "run-p dev:*",
-    "dev:worker": "wrangler dev",
-    "dev:client": "vite --config client/vite.config.ts",
-    "build": "pnpm run build:client && pnpm run build:worker",
-    "build:worker": "wrangler deploy --dry-run",
-    "build:client": "vite build --config client/vite.config.ts",
+    "dev": "vite",
+    "build": "vite build",
     "deploy": "wrangler deploy",
     "typegen": "wrangler types",
     "typecheck": "run-p typecheck:*",
@@ -33,6 +29,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.25.5",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/devtools-vite": "^0.4.1",
     "@tanstack/router-plugin": "^1.157.16",
@@ -42,6 +39,6 @@
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:",
     "vite": "catalog:",
-    "wrangler": "^4.61.1"
+    "wrangler": "^4.68.1"
   }
 }

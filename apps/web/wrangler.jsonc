@@ -5,7 +5,6 @@
 	"compatibility_date": "2025-09-27",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
-		"directory": "client/dist",
 		"binding": "ASSETS",
 		"not_found_handling": "single-page-application"
 	},
