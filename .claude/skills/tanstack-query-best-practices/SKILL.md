@@ -124,6 +124,20 @@ export function useSessionTitle(id: string) {
 - Prefer object keys over positional arrays for named destructuring: `{ filters, sort }` beats `[filters, sort]`.
 - Don't put `undefined` in keys — use default parameter values instead (e.g., `sorting: Sorting = {}`).
 
+### `enabled` — Conditional Queries
+
+Use `enabled` to control when a query runs. Disabled queries won't fetch automatically but stay subscribed:
+
+```typescript
+// Dependent query — only fetches when userId is available
+useQuery({
+  ...userQueries.detail(userId!),
+  enabled: !!userId,
+});
+```
+
+`enabled: false` pauses all automatic fetching (mount, window focus, interval). You can still trigger manual fetches with `refetch()`. This is the right tool for dependent/sequential queries and feature flags — not removing the query entirely.
+
 ## Defaults & Configuration
 
 TanStack Query's defaults are aggressive on purpose — they keep data fresh:
@@ -136,6 +150,7 @@ TanStack Query's defaults are aggressive on purpose — they keep data fresh:
 | `refetchOnMount` | `true` | Keep it on unless you have a specific reason. |
 | `refetchOnReconnect` | `true` | Keep it on. |
 | `retry` | 3 (exponential backoff) | Good default. Set to `false` in tests. |
+| `networkMode` | `'online'` | Pauses queries when offline. Use `'offlineFirst'` if you have a service worker/cache layer (first request must fire for the SW to intercept). Use `'always'` for queries that don't need network (e.g., IndexedDB). |
 
 Only disable refetch flags if you truly understand why and your use case demands it. The defaults exist to keep your UI accurate.
 
@@ -164,6 +179,7 @@ Why not check `isPending` first? Because during a background refetch failure, yo
 Two status dimensions:
 - `status` (`pending` | `error` | `success`) tells you about **data** — do you have it or not?
 - `fetchStatus` (`fetching` | `paused` | `idle`) tells you about the **queryFn** — is it running?
+- `isPlaceholderData` — `true` when the displayed data is placeholder (from `placeholderData` option). Use it to show a visual hint (e.g., reduced opacity) so the user knows the data is temporary.
 
 ## Data Transformations with `select`
 
@@ -189,9 +205,10 @@ function useFilteredTodos(status: "done" | "open") {
 ```
 
 - `select` only runs when data exists — no `undefined` checks needed.
-- Components only re-render when their selected slice actually changes (thanks to structural sharing).
-- For expensive computations, stabilize the selector with `useCallback` or extract to a module-level function.
+- Components only re-render when their selected slice actually changes (thanks to structural sharing applied twice: once on the queryFn result, once on the select result).
+- For expensive computations, stabilize the selector with `useCallback` or extract to a module-level function. For simple selectors, inline is fine — structural sharing prevents unnecessary re-renders even without memoization.
 - Don't transform in `queryFn` unless you want the **transformed** structure cached (you lose access to the original).
+- TanStack Query uses **tracked queries** by default (since v4): it tracks which fields of the query result you access and only re-renders when those specific fields change. Opt out with `notifyOnChangeProps: 'all'` if needed.
 
 ## Error Handling
 
@@ -232,9 +249,48 @@ Note: `onSuccess` / `onError` / `onSettled` callbacks on `useQuery` were **remov
 
 ## Mutations & Invalidation
 
-### Prefer invalidation over direct cache updates
+### `mutate` vs `mutateAsync`
 
-Invalidation is simpler and avoids duplicating backend logic on the frontend:
+`useMutation` returns two ways to trigger the mutation:
+- **`mutate()`** — fire-and-forget. Handle results via the `onSuccess`/`onError` callbacks. This is the default choice.
+- **`mutateAsync()`** — returns a Promise. Use only when you need to `await` the result (e.g., sequential mutations). Remember to handle errors yourself — `mutateAsync` rejects on error.
+
+### Callback separation principle
+
+`useMutation` callbacks (in the hook definition) are for **query-related side effects** — cache invalidation, refetching. `mutate()` callbacks (at the call site) are for **component-specific side effects** — navigation, closing modals, showing toasts:
+
+```typescript
+// Hook definition — cache concerns
+const mutation = useMutation({
+  mutationFn: createSession,
+  onSuccess: () => {
+    void queryClient.invalidateQueries({ queryKey: sessionQueries.all().queryKey });
+  },
+});
+
+// Call site — UI concerns
+mutation.mutate(data, {
+  onSuccess: () => navigate("/sessions"),
+});
+```
+
+### Global MutationCache callbacks
+
+Like QueryCache, MutationCache supports global callbacks for cross-cutting concerns:
+
+```typescript
+const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      toast.error(`Mutation failed: ${error.message}`);
+    },
+  }),
+});
+```
+
+### Invalidation Strategies
+
+Prefer invalidation over direct cache updates — it's simpler and avoids duplicating backend logic:
 
 ```typescript
 export function useCreateSession() {
@@ -366,6 +422,10 @@ useQuery({
 });
 ```
 
+When using `initialData` from another query, always set `initialDataUpdatedAt` — without it, TanStack Query assumes the data was fetched "now" and may skip necessary refetches.
+
+To prevent Suspense waterfalls (where sequential `useSuspenseQuery` calls create a loading cascade), use `prefetchQuery` earlier in the lifecycle (e.g., in route loaders or parent components) to ensure the cache is warm before the suspending component mounts.
+
 ## Testing
 
 ```typescript
@@ -388,6 +448,7 @@ function renderWithClient(ui: React.ReactElement) {
 Critical rules:
 - **New QueryClient per test** — shared clients leak cached data between tests.
 - **`retry: false`** — default 3 retries with exponential backoff will make error tests timeout.
+- **Never mock `useQuery` directly** — mock the API layer (network requests) instead. Mocking `useQuery` skips all React Query logic (caching, retries, dedup) and tests a fake version of your code.
 - **Use MSW (Mock Service Worker)** — single source of truth for API mocking that works in tests, Storybook, and dev.
 
 ## Router Integration (TanStack Router)
@@ -418,8 +479,36 @@ function SessionPage() {
 
 When forms need server data as defaults:
 - Copy server state to form state and set a high `staleTime` (background updates are irrelevant while editing).
-- For collaborative environments, keep background updates on and derive display from merged server + client state.
-- React Hook Form's `values` API reacts to external value changes, integrating well with React Query.
+- For collaborative environments, keep background updates on and derive display from merged server + client state. Use controlled fields (not uncontrolled) so React can update values when server state changes.
+- React Hook Form's `values` API reacts to external value changes. Combine with `resetOptions: { keepDirtyValues: true }` to preserve user edits while syncing untouched fields from the server.
+
+## Infinite Queries
+
+`useInfiniteQuery` manages paginated/infinite-scroll data. The key difference from `useQuery`: data is stored as an array of pages.
+
+```typescript
+useInfiniteQuery({
+  queryKey: ["posts"],
+  queryFn: ({ pageParam }) => fetchPosts(pageParam),
+  initialPageParam: 0,
+  getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  maxPages: 5, // Limit stored/refetched pages for performance
+});
+```
+
+- `getNextPageParam` drives pagination — return `undefined` to signal no more pages.
+- On refetch, TanStack Query re-fetches all loaded pages sequentially to maintain consistency.
+- Use `maxPages` to cap how many pages are stored and refetched — important for long-lived sessions.
+- `hasNextPage` is `true` when `getNextPageParam` returns a non-undefined value.
+
+## Real-time / WebSocket Patterns
+
+TanStack Query works well with event-driven updates. Two approaches:
+
+1. **Event-driven invalidation** (simpler): receive events via WebSocket, call `invalidateQueries`. This only refetches active queries — ideal for push notifications.
+2. **Direct cache updates**: receive full data via WebSocket, update cache with `setQueryData`. Better for high-frequency updates where you want to avoid refetching.
+
+When all updates come through WebSocket, set `staleTime: Infinity` — time-based refetching is redundant when you receive push updates.
 
 ## Anti-patterns
 
@@ -435,6 +524,7 @@ When forms need server data as defaults:
 | Check `isPending` before `data` | Check `data` first, then error, loading as fallback |
 | Create custom hooks as the first abstraction | Use `queryOptions` factories first; wrap in hooks only when needed |
 | Use `prefetchQuery` in loaders | Use `fetchQuery` or `ensureQueryData` (they throw on error) |
+| Mock `useQuery` in tests | Mock the network layer (MSW) — mocking `useQuery` skips all React Query logic |
 
 ## Architecture Quick Reference
 
