@@ -14,11 +14,7 @@ export interface AppVariables {
   db: DB;
 }
 
-const db = createDB({
-  accountId: env.CF_ACCOUNT_ID!,
-  databaseId: env.D1_DATABASE_ID!,
-  apiToken: env.CF_API_TOKEN!,
-});
+const db = createDB(env.DATABASE_PATH);
 
 const app = new Hono<{ Variables: AppVariables }>()
   .use("*", logger())

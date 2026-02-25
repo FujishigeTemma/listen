@@ -21,16 +21,15 @@ const EnvSchema = v.object({
     v.transform((val) => parseInt(val, 10)),
   ),
   HLS_FORMAT: v.optional(v.picklist(["mpegts", "fmp4", "cmaf"]), "cmaf"),
-  // R2 (optional for local dev)
+
+  // Database
+  DATABASE_PATH: v.optional(v.string(), "./data/admin.db"),
+
+  // R2 (optional)
   R2_ENDPOINT: v.optional(v.string()),
   R2_ACCESS_KEY_ID: v.optional(v.string()),
   R2_SECRET_ACCESS_KEY: v.optional(v.string()),
   R2_BUCKET: v.optional(v.string(), "dj-hls"),
-
-  // D1 HTTP API (optional for local dev)
-  CF_API_TOKEN: v.optional(v.string()),
-  CF_ACCOUNT_ID: v.optional(v.string()),
-  D1_DATABASE_ID: v.optional(v.string()),
 });
 
 export type Env = InferOutput<typeof EnvSchema>;

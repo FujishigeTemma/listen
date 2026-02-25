@@ -1,36 +1,23 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import * as schema from "@listen/db";
-import { Cloudflare } from "cloudflare";
-import { drizzle } from "drizzle-orm/sqlite-proxy";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
-export interface D1HttpConfig {
-  accountId: string;
-  databaseId: string;
-  apiToken: string;
-}
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const migrationsFolder = resolve(__dirname, "../../../../../packages/db/drizzle");
 
-export function createDB(config: D1HttpConfig) {
-  const cf = new Cloudflare({ apiToken: config.apiToken });
+export function createDB(dbPath: string) {
+  const sqlite = new Database(resolve(dbPath));
+  sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("foreign_keys = ON");
 
-  return drizzle(
-    async (sql, params, method) => {
-      const results = await Array.fromAsync(
-        cf.d1.database.raw(config.databaseId, {
-          account_id: config.accountId,
-          sql,
-          params: params.map(String),
-        }),
-      );
+  const db = drizzle(sqlite, { schema });
+  migrate(db, { migrationsFolder });
 
-      const rows = results[0]?.results?.rows ?? [];
-
-      if (method === "get") {
-        return { rows: rows[0] ?? [] };
-      }
-
-      return { rows };
-    },
-    { schema },
-  );
+  return db;
 }
 
 export type DB = ReturnType<typeof createDB>;
