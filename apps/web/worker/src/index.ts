@@ -1,4 +1,4 @@
-import type { Env, Variables } from "./types";
+import type { Variables } from "./types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -23,7 +23,10 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>()
   .route("/tracks", tracksRoutes)
   .route("/subscribe", subscribeRoutes)
   .route("/billing", billingRoutes)
-  .route("/me", meRoutes);
+  .route("/me", meRoutes)
+  .get("*", async (c) => {
+    return c.env.ASSETS.fetch(c.req.raw);
+  });
 
 export type AppType = typeof app;
 

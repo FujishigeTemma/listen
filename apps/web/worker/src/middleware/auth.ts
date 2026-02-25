@@ -1,4 +1,4 @@
-import type { Env, Variables } from "../types";
+import type { Variables } from "../types";
 import { createMiddleware } from "hono/factory";
 
 // Stub auth middleware - will be replaced with Clerk integration
