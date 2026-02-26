@@ -1,6 +1,8 @@
+import { SignInButton } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Settings, Crown, LogIn } from "lucide-react";
 
+import { isAuthEnabled } from "../lib/clerk";
 import { useCurrentUser, useBillingStatus, useCreateCheckout } from "../lib/queries";
 
 export const Route = createFileRoute("/settings")({
@@ -82,6 +84,8 @@ function AccountInfo({ email, isPremium }: { email: string | undefined; isPremiu
 }
 
 function SignInPrompt() {
+  const authEnabled = isAuthEnabled();
+
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center">
       <LogIn className="mx-auto h-8 w-8 text-zinc-500" />
@@ -89,12 +93,20 @@ function SignInPrompt() {
       <p className="mt-1 text-sm text-zinc-500">
         Create an account to sync your preferences and upgrade to premium
       </p>
-      <button
-        disabled
-        className="mt-4 rounded-lg border border-zinc-700 px-6 py-2 text-sm hover:bg-zinc-800 disabled:opacity-50"
-      >
-        Sign In (Coming Soon)
-      </button>
+      {authEnabled ? (
+        <SignInButton mode="modal">
+          <button className="mt-4 rounded-lg border border-zinc-700 px-6 py-2 text-sm hover:bg-zinc-800">
+            Sign In
+          </button>
+        </SignInButton>
+      ) : (
+        <button
+          disabled
+          className="mt-4 rounded-lg border border-zinc-700 px-6 py-2 text-sm opacity-50"
+        >
+          Sign In (Not Configured)
+        </button>
+      )}
     </div>
   );
 }

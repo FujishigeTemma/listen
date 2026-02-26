@@ -1,10 +1,18 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 
-import { client } from "./client";
+import { useAuthToken } from "./clerk";
+import { client, createClient } from "./client";
 
 type TracksResponse = InferResponseType<(typeof client.tracks)[":sessionId"]["$get"]>;
 export type Track = TracksResponse extends { tracks: (infer T)[] } ? T : never;
+
+/** Returns an authenticated Hono client when signed in, public client otherwise. */
+function useClient() {
+  const getToken = useAuthToken();
+  if (!getToken) return client;
+  return createClient(getToken);
+}
 
 export function useLiveSession() {
   return useQuery({
@@ -20,10 +28,11 @@ export function useLiveSession() {
 }
 
 export function useArchiveSessions() {
+  const authedClient = useClient();
   return useQuery({
     queryKey: ["sessions", "archive"],
     queryFn: async () => {
-      const res = await client.sessions.archive.$get();
+      const res = await authedClient.sessions.archive.$get();
       if (!res.ok) throw new Error("Failed to fetch archive");
       const data = await res.json();
       return data.sessions;
@@ -32,10 +41,11 @@ export function useArchiveSessions() {
 }
 
 export function useSession(id: string) {
+  const authedClient = useClient();
   return useQuery({
     queryKey: ["sessions", id],
     queryFn: async () => {
-      const res = await client.sessions[":id"].$get({ param: { id } });
+      const res = await authedClient.sessions[":id"].$get({ param: { id } });
       if (!res.ok) throw new Error("Failed to fetch session");
       const data = await res.json();
       return data.session;
@@ -70,32 +80,55 @@ export function useSubscribe() {
 }
 
 export function useCurrentUser() {
+  const authedClient = useClient();
+  const hasAuth = useAuthToken() !== undefined;
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      const res = await client.me.$get();
+      const res = await authedClient.me.$get();
       if (!res.ok) throw new Error("Failed to fetch user");
       const data = await res.json();
       return data.user;
+    },
+    enabled: hasAuth,
+  });
+}
+
+/** Sync user data to the database after sign-in. */
+export function useSyncUser() {
+  const authedClient = useClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await authedClient.me.sync.$post();
+      if (!res.ok) throw new Error("Failed to sync user");
+      return res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }
 
 export function useBillingStatus() {
+  const authedClient = useClient();
+  const hasAuth = useAuthToken() !== undefined;
   return useQuery({
     queryKey: ["billing", "status"],
     queryFn: async () => {
-      const res = await client.billing.status.$get();
+      const res = await authedClient.billing.status.$get();
       if (!res.ok) throw new Error("Failed to fetch billing status");
       return res.json();
     },
+    enabled: hasAuth,
   });
 }
 
 export function useCreateCheckout() {
+  const authedClient = useClient();
   return useMutation({
     mutationFn: async () => {
-      const res = await client.billing.checkout.$post();
+      const res = await authedClient.billing.checkout.$post();
       if (!res.ok) throw new Error("Failed to create checkout");
       return res.json();
     },
