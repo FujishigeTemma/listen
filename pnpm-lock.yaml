@@ -168,6 +168,9 @@ importers:
       '@clerk/clerk-react':
         specifier: ^5.60.0
         version: 5.60.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@hono/clerk-auth':
+        specifier: ^3.1.0
+        version: 3.1.0(hono@4.11.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@hono/valibot-validator':
         specifier: 'catalog:'
         version: 0.6.1(hono@4.11.7)(valibot@1.2.0(typescript@5.8.3))
@@ -1228,6 +1231,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hono/clerk-auth@3.1.0':
+    resolution: {integrity: sha512-kkC6WiCaRwud7sQGSU0zgJJEI1CHPsnM0oK3jmVtozQn7rHMeqITFn4SU+ehnrXdHJBryYJsGheMJwQuhusDgw==}
+    engines: {node: '>=16.x.x'}
+    peerDependencies:
+      hono: '>=3.0.0'
 
   '@hono/node-server@1.19.9':
     resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
@@ -4390,6 +4399,15 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.3':
     optional: true
+
+  '@hono/clerk-auth@3.1.0(hono@4.11.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@clerk/backend': 2.29.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@clerk/shared': 3.44.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      hono: 4.11.7
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   '@hono/node-server@1.19.9(hono@4.11.7)':
     dependencies:

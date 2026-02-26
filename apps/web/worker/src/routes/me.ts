@@ -1,65 +1,66 @@
 import type { Variables } from "../types";
 import type { DB } from "../lib/db";
+import { getAuth } from "@hono/clerk-auth";
 import { users } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { createDB } from "../lib/db";
 
-async function upsertUser(db: DB, userId: string, userEmail: string | undefined) {
+async function upsertUser(db: DB, userId: string, email: string | undefined) {
   const existing = await db.query.users.findFirst({
     where: eq(users.id, userId),
   });
 
   if (existing) {
-    if (userEmail && existing.email !== userEmail) {
-      await db.update(users).set({ email: userEmail }).where(eq(users.id, userId));
+    if (email && existing.email !== email) {
+      await db.update(users).set({ email }).where(eq(users.id, userId));
     }
-  } else if (userEmail) {
+  } else if (email) {
     await db.insert(users).values({
       id: userId,
-      email: userEmail,
+      email,
       isPremium: false,
       createdAt: Math.floor(Date.now() / 1000),
     });
   }
 }
 
-function formatUser(user: { id: string; email: string; isPremium: boolean }) {
-  return { id: user.id, email: user.email, isPremium: user.isPremium };
-}
-
 const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   .get("/", async (c) => {
     const userId = c.get("userId");
-
     if (!userId) {
       // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
       return c.json({ user: null });
     }
 
-    const userEmail = c.get("userEmail");
-    const isPremium = c.get("isPremium") ?? false;
-
     return c.json({
-      user: { id: userId, email: userEmail, isPremium },
+      user: {
+        id: userId,
+        email: c.get("userEmail"),
+        isPremium: c.get("isPremium") ?? false,
+      },
     });
   })
   .post("/sync", async (c) => {
-    const userId = c.get("userId");
-    if (!userId) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
+    const auth = getAuth(c);
+    if (!auth?.userId) return c.json({ error: "Unauthorized" }, 401);
+
+    const clerk = c.get("clerk");
+    const clerkUser = await clerk.users.getUser(auth.userId);
 
     const db = createDB(c.env.DB);
-    await upsertUser(db, userId, c.get("userEmail"));
+    const email = clerkUser.emailAddresses[0]?.emailAddress;
+    await upsertUser(db, auth.userId, email);
 
     const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(users.id, auth.userId),
     });
 
-    // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
-    return c.json({ user: user ? formatUser(user) : null });
+    return c.json({
+      // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
+      user: user ? { id: user.id, email: user.email, isPremium: user.isPremium } : null,
+    });
   });
 
 export { meRoutes };

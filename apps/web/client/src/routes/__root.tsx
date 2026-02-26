@@ -4,7 +4,6 @@ import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router
 import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
 
-import { isAuthEnabled } from "../lib/clerk";
 import { useSyncUser } from "../lib/queries";
 
 interface RouterContext {
@@ -27,30 +26,19 @@ function RootLayout() {
           DJ Audio Livestream
         </div>
       </footer>
-      <UserSync />
+      <SignedIn>
+        <UserSync />
+      </SignedIn>
     </div>
   );
 }
 
-/** Syncs the Clerk user to the database after sign-in. */
 function UserSync() {
-  if (!isAuthEnabled()) return <></>;
-  return (
-    <SignedIn>
-      <UserSyncInner />
-    </SignedIn>
-  );
-}
-
-function UserSyncInner() {
   const sync = useSyncUser();
-
   useEffect(() => {
     sync.mutate();
-    // Run once on mount
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   return <></>;
 }
 
@@ -83,18 +71,10 @@ function Navigation() {
 }
 
 function AuthSection() {
-  if (!isAuthEnabled()) return <></>;
-
   return (
     <div className="flex items-center">
       <SignedIn>
-        <UserButton
-          appearance={{
-            elements: {
-              avatarBox: "h-8 w-8",
-            },
-          }}
-        />
+        <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
       </SignedIn>
       <SignedOut>
         <SignInButton mode="modal">

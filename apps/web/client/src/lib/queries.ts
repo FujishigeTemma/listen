@@ -1,16 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
 import type { InferResponseType } from "hono/client";
 
-import { useAuthToken } from "./clerk";
-import { client, createClient } from "./client";
+import { createClient, publicClient } from "./client";
 
-type TracksResponse = InferResponseType<(typeof client.tracks)[":sessionId"]["$get"]>;
+type TracksResponse = InferResponseType<(typeof publicClient.tracks)[":sessionId"]["$get"]>;
 export type Track = TracksResponse extends { tracks: (infer T)[] } ? T : never;
 
-/** Returns an authenticated Hono client when signed in, public client otherwise. */
 function useClient() {
-  const getToken = useAuthToken();
-  if (!getToken) return client;
+  const { getToken } = useAuth();
   return createClient(getToken);
 }
 
@@ -18,21 +16,21 @@ export function useLiveSession() {
   return useQuery({
     queryKey: ["sessions", "live"],
     queryFn: async () => {
-      const res = await client.sessions.live.$get();
+      const res = await publicClient.sessions.live.$get();
       if (!res.ok) throw new Error("Failed to fetch live session");
       const data = await res.json();
       return data.session;
     },
-    refetchInterval: 10_000, // Poll every 10 seconds
+    refetchInterval: 10_000,
   });
 }
 
 export function useArchiveSessions() {
-  const authedClient = useClient();
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", "archive"],
     queryFn: async () => {
-      const res = await authedClient.sessions.archive.$get();
+      const res = await client.sessions.archive.$get();
       if (!res.ok) throw new Error("Failed to fetch archive");
       const data = await res.json();
       return data.sessions;
@@ -41,11 +39,11 @@ export function useArchiveSessions() {
 }
 
 export function useSession(id: string) {
-  const authedClient = useClient();
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", id],
     queryFn: async () => {
-      const res = await authedClient.sessions[":id"].$get({ param: { id } });
+      const res = await client.sessions[":id"].$get({ param: { id } });
       if (!res.ok) throw new Error("Failed to fetch session");
       const data = await res.json();
       return data.session;
@@ -57,7 +55,7 @@ export function useTracks(sessionId: string) {
   return useQuery({
     queryKey: ["tracks", sessionId],
     queryFn: async () => {
-      const res = await client.tracks[":sessionId"].$get({ param: { sessionId } });
+      const res = await publicClient.tracks[":sessionId"].$get({ param: { sessionId } });
       if (!res.ok) throw new Error("Failed to fetch tracks");
       const data = await res.json();
       return data.tracks;
@@ -72,7 +70,7 @@ export function useSubscribe() {
       notifyLive?: boolean;
       notifyScheduled?: boolean;
     }) => {
-      const res = await client.subscribe.$post({ json: data });
+      const res = await publicClient.subscribe.$post({ json: data });
       if (!res.ok) throw new Error("Failed to subscribe");
       return res.json();
     },
@@ -80,27 +78,26 @@ export function useSubscribe() {
 }
 
 export function useCurrentUser() {
-  const authedClient = useClient();
-  const hasAuth = useAuthToken() !== undefined;
+  const client = useClient();
+  const { isSignedIn } = useAuth();
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      const res = await authedClient.me.$get();
+      const res = await client.me.$get();
       if (!res.ok) throw new Error("Failed to fetch user");
       const data = await res.json();
       return data.user;
     },
-    enabled: hasAuth,
+    enabled: Boolean(isSignedIn),
   });
 }
 
-/** Sync user data to the database after sign-in. */
 export function useSyncUser() {
-  const authedClient = useClient();
+  const client = useClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const res = await authedClient.me.sync.$post();
+      const res = await client.me.sync.$post();
       if (!res.ok) throw new Error("Failed to sync user");
       return res.json();
     },
@@ -111,24 +108,24 @@ export function useSyncUser() {
 }
 
 export function useBillingStatus() {
-  const authedClient = useClient();
-  const hasAuth = useAuthToken() !== undefined;
+  const client = useClient();
+  const { isSignedIn } = useAuth();
   return useQuery({
     queryKey: ["billing", "status"],
     queryFn: async () => {
-      const res = await authedClient.billing.status.$get();
+      const res = await client.billing.status.$get();
       if (!res.ok) throw new Error("Failed to fetch billing status");
       return res.json();
     },
-    enabled: hasAuth,
+    enabled: Boolean(isSignedIn),
   });
 }
 
 export function useCreateCheckout() {
-  const authedClient = useClient();
+  const client = useClient();
   return useMutation({
     mutationFn: async () => {
-      const res = await authedClient.billing.checkout.$post();
+      const res = await client.billing.checkout.$post();
       if (!res.ok) throw new Error("Failed to create checkout");
       return res.json();
     },
