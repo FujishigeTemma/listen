@@ -4,6 +4,7 @@ import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router
 import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
 
+import { AuthProvider } from "../lib/clerk";
 import { useSyncUser } from "../lib/queries";
 
 interface RouterContext {
@@ -16,20 +17,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header />
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Outlet />
-      </main>
-      <footer className="border-t border-zinc-800 py-8">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
-          DJ Audio Livestream
-        </div>
-      </footer>
-      <SignedIn>
-        <UserSync />
-      </SignedIn>
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100">
+        <Header />
+        <main className="mx-auto max-w-4xl px-4 py-8">
+          <Outlet />
+        </main>
+        <footer className="border-t border-zinc-800 py-8">
+          <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
+            DJ Audio Livestream
+          </div>
+        </footer>
+        <SignedIn>
+          <UserSync />
+        </SignedIn>
+      </div>
+    </AuthProvider>
   );
 }
 

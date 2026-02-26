@@ -3,7 +3,9 @@ import { hc } from "hono/client";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8787";
 
-export function createClient(getToken: () => Promise<string | null>) {
+export type Client = ReturnType<typeof hc<AppType>>;
+
+export function createClient(getToken: () => Promise<string | null>): Client {
   return hc<AppType>(API_BASE, {
     fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const headers = new Headers(init?.headers);
@@ -13,5 +15,3 @@ export function createClient(getToken: () => Promise<string | null>) {
     },
   });
 }
-
-export const publicClient = hc<AppType>(API_BASE);

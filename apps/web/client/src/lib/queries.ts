@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import type { InferResponseType } from "hono/client";
 
-import { createClient, publicClient } from "./client";
+import type { Client } from "./client";
+import { createClient } from "./client";
 
-type TracksResponse = InferResponseType<(typeof publicClient.tracks)[":sessionId"]["$get"]>;
+type TracksResponse = InferResponseType<Client["tracks"][":sessionId"]["$get"]>;
 export type Track = TracksResponse extends { tracks: (infer T)[] } ? T : never;
 
 function useClient() {
@@ -13,10 +14,11 @@ function useClient() {
 }
 
 export function useLiveSession() {
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", "live"],
     queryFn: async () => {
-      const res = await publicClient.sessions.live.$get();
+      const res = await client.sessions.live.$get();
       if (!res.ok) throw new Error("Failed to fetch live session");
       const data = await res.json();
       return data.session;
@@ -52,10 +54,11 @@ export function useSession(id: string) {
 }
 
 export function useTracks(sessionId: string) {
+  const client = useClient();
   return useQuery({
     queryKey: ["tracks", sessionId],
     queryFn: async () => {
-      const res = await publicClient.tracks[":sessionId"].$get({ param: { sessionId } });
+      const res = await client.tracks[":sessionId"].$get({ param: { sessionId } });
       if (!res.ok) throw new Error("Failed to fetch tracks");
       const data = await res.json();
       return data.tracks;
@@ -64,13 +67,14 @@ export function useTracks(sessionId: string) {
 }
 
 export function useSubscribe() {
+  const client = useClient();
   return useMutation({
     mutationFn: async (data: {
       email: string;
       notifyLive?: boolean;
       notifyScheduled?: boolean;
     }) => {
-      const res = await publicClient.subscribe.$post({ json: data });
+      const res = await client.subscribe.$post({ json: data });
       if (!res.ok) throw new Error("Failed to subscribe");
       return res.json();
     },
