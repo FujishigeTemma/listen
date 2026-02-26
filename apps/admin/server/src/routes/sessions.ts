@@ -1,12 +1,12 @@
 import { join } from "node:path";
 
+import type { AppVariables } from "../index";
+import type { DB } from "../services/db";
 import { vValidator } from "@hono/valibot-validator";
 import { sessions } from "@listen/db";
 import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import * as v from "valibot";
-import type { AppVariables } from "../index";
-import type { DB } from "../services/db";
 
 import { env } from "../lib/env";
 import {

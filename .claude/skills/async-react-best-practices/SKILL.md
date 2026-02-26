@@ -28,30 +28,30 @@ The core idea: **declare an entire async operation as a single intentional state
 
 ```tsx
 // Before: manual async state management scattered across the component
-const [isPending, setIsPending] = useState(false)
-const [error, setError] = useState(null)
+const [isPending, setIsPending] = useState(false);
+const [error, setError] = useState(null);
 
 const handleSubmit = async () => {
-  setIsPending(true)
+  setIsPending(true);
   try {
-    await submit(data)
+    await submit(data);
   } catch (e) {
-    setError(e)
+    setError(e);
   } finally {
-    setIsPending(false)
+    setIsPending(false);
   }
-}
+};
 
 // After: Transition absorbs the async complexity
-const [isPending, startTransition] = useTransition()
+const [isPending, startTransition] = useTransition();
 
 const handleSubmit = () => {
   startTransition(async () => {
-    const error = await updateProfile(name)
-    if (error) setError(error)
-    else redirect('/home')
-  })
-}
+    const error = await updateProfile(name);
+    if (error) setError(error);
+    else redirect("/home");
+  });
+};
 ```
 
 ### What Transitions Manage
@@ -68,15 +68,15 @@ State updates after an `await` inside `startTransition` are **not** automaticall
 
 ```tsx
 startTransition(async () => {
-  await saveData(data)
+  await saveData(data);
   // This state update is NOT part of the transition:
-  setStatus('saved')
+  setStatus("saved");
 
   // To keep it in the transition, re-wrap:
   startTransition(() => {
-    setStatus('saved')
-  })
-})
+    setStatus("saved");
+  });
+});
 ```
 
 This constraint will be resolved when TC39's AsyncContext proposal lands in JavaScript. Until then, re-wrap state updates after each `await` if they need to be part of the transition.
@@ -96,6 +96,7 @@ User Action
 ```
 
 In this model:
+
 - **Navigation** is a Transition (TanStack Router wraps `<Link>` and `<Form>` navigation automatically)
 - **Data mutations** are Transitions (wrap `mutate` calls in `startTransition`)
 - **Filter/sort changes** that trigger new queries are Transitions (prevents Suspense fallback flash)
@@ -106,14 +107,14 @@ When a query key change triggers a new fetch inside a Suspense boundary, the def
 
 ```tsx
 function PostsFilter() {
-  const [isPending, startTransition] = useTransition()
-  const [filter, setFilter] = useState('all')
+  const [isPending, startTransition] = useTransition();
+  const [filter, setFilter] = useState("all");
 
   const handleFilter = (newFilter: string) => {
     startTransition(() => {
-      setFilter(newFilter) // Query key changes but fallback won't show
-    })
-  }
+      setFilter(newFilter); // Query key changes but fallback won't show
+    });
+  };
 
   return (
     <div style={{ opacity: isPending ? 0.7 : 1 }}>
@@ -122,7 +123,7 @@ function PostsFilter() {
         <PostsList filter={filter} />
       </Suspense>
     </div>
-  )
+  );
 }
 ```
 
@@ -137,21 +138,18 @@ function useOptimisticMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>,
   queryKey: readonly unknown[],
 ) {
-  const queryClient = useQueryClient()
-  const [isPending, startTransition] = useTransition()
+  const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
 
-  const execute = (
-    variables: TVariables,
-    optimisticUpdate: (old: TData | undefined) => TData,
-  ) => {
+  const execute = (variables: TVariables, optimisticUpdate: (old: TData | undefined) => TData) => {
     startTransition(async () => {
-      queryClient.setQueryData(queryKey, optimisticUpdate)
-      await mutationFn(variables)
-      await queryClient.invalidateQueries({ queryKey })
-    })
-  }
+      queryClient.setQueryData(queryKey, optimisticUpdate);
+      await mutationFn(variables);
+      await queryClient.invalidateQueries({ queryKey });
+    });
+  };
 
-  return { execute, isPending }
+  return { execute, isPending };
 }
 ```
 
@@ -172,20 +170,20 @@ function PostsPage() {
     <AsyncBoundary fallback={<PostsSkeleton />}>
       <PostsList />
     </AsyncBoundary>
-  )
+  );
 }
 
 // PostsList uses useSuspenseQuery — it suspends, and the
 // boundary above catches it
 function PostsList() {
-  const { data, isFetching } = useSuspenseQuery(postsQueryOptions())
+  const { data, isFetching } = useSuspenseQuery(postsQueryOptions());
   return (
     <div data-pending={isFetching || undefined}>
       {data.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}
     </div>
-  )
+  );
 }
 ```
 
@@ -196,17 +194,17 @@ Below the boundaries. They receive data via props or context and manage only the
 ```tsx
 // A Leaf Component — pure UI, local state only
 function PostCard({ post }: { post: Post }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="rounded-lg border p-4">
       <h3>{post.title}</h3>
       {isExpanded && <p>{post.body}</p>}
       <button onClick={() => setIsExpanded(!isExpanded)}>
-        {isExpanded ? 'Collapse' : 'Expand'}
+        {isExpanded ? "Collapse" : "Expand"}
       </button>
     </div>
-  )
+  );
 }
 ```
 
@@ -224,25 +222,25 @@ Filters, pagination, sort order, active tab — anything that should survive a p
 
 ```tsx
 // Route definition with typed search params
-export const Route = createFileRoute('/posts')({
+export const Route = createFileRoute("/posts")({
   validateSearch: (search: Record<string, unknown>) => ({
-    filter: (search.filter as string) || 'all',
+    filter: (search.filter as string) || "all",
     page: Number(search.page) || 1,
-    sort: (search.sort as 'date' | 'title') || 'date',
+    sort: (search.sort as "date" | "title") || "date",
   }),
   // ...
-})
+});
 
 // In component — read and update search params
 function PostsPage() {
-  const { filter, page, sort } = Route.useSearch()
-  const navigate = Route.useNavigate()
+  const { filter, page, sort } = Route.useSearch();
+  const navigate = Route.useNavigate();
 
   const updateFilter = (newFilter: string) => {
     startTransition(() => {
-      navigate({ search: (prev) => ({ ...prev, filter: newFilter, page: 1 }) })
-    })
-  }
+      navigate({ search: (prev) => ({ ...prev, filter: newFilter, page: 1 }) });
+    });
+  };
   // ...
 }
 ```
@@ -280,13 +278,13 @@ TanStack Query cache update
 Combine Suspense and ErrorBoundary into a reusable boundary. Use `QueryErrorResetBoundary` from TanStack Query to enable retry-from-error:
 
 ```tsx
-import { QueryErrorResetBoundary } from '@tanstack/react-query'
-import { ErrorBoundary } from 'react-error-boundary'
+import { QueryErrorResetBoundary } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
 
 interface AsyncBoundaryProps {
-  fallback?: React.ReactNode
-  errorFallback?: React.ReactNode
-  children: React.ReactNode
+  fallback?: React.ReactNode;
+  errorFallback?: React.ReactNode;
+  children: React.ReactNode;
 }
 
 function AsyncBoundary({ fallback, errorFallback, children }: AsyncBoundaryProps) {
@@ -299,13 +297,11 @@ function AsyncBoundary({ fallback, errorFallback, children }: AsyncBoundaryProps
             errorFallback ?? <DefaultError onRetry={resetErrorBoundary} />
           }
         >
-          <Suspense fallback={fallback ?? <DefaultSkeleton />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={fallback ?? <DefaultSkeleton />}>{children}</Suspense>
         </ErrorBoundary>
       )}
     </QueryErrorResetBoundary>
-  )
+  );
 }
 ```
 
@@ -314,25 +310,24 @@ function AsyncBoundary({ fallback, errorFallback, children }: AsyncBoundaryProps
 Buttons and forms that trigger async operations accept an `action` prop (a function returning a Promise). The component wraps it in `startTransition` internally:
 
 ```tsx
-interface ButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
-  action?: () => Promise<void>
-  onClick?: React.MouseEventHandler<HTMLButtonElement>
-  children: React.ReactNode
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+  action?: () => Promise<void>;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  children: React.ReactNode;
 }
 
 function Button({ action, onClick, children, disabled, ...props }: ButtonProps) {
-  const [isPending, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (action) {
       startTransition(async () => {
-        await action()
-      })
+        await action();
+      });
     } else {
-      onClick?.(e)
+      onClick?.(e);
     }
-  }
+  };
 
   return (
     <button
@@ -345,7 +340,7 @@ function Button({ action, onClick, children, disabled, ...props }: ButtonProps) 
       {isPending ? <Spinner size="sm" /> : null}
       {children}
     </button>
-  )
+  );
 }
 ```
 
@@ -370,35 +365,35 @@ Use `isFetching` from `useSuspenseQuery` (not `isPending`, which is always `fals
 
 ```tsx
 interface FormProps<T> {
-  action: (data: T) => Promise<void>
-  schema?: ZodSchema<T>
-  children: React.ReactNode
-  onSuccess?: () => void
+  action: (data: T) => Promise<void>;
+  schema?: ZodSchema<T>;
+  children: React.ReactNode;
+  onSuccess?: () => void;
 }
 
 function Form<T>({ action, schema, children, onSuccess }: FormProps<T>) {
-  const [isPending, startTransition] = useTransition()
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isPending, startTransition] = useTransition();
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const rawData = Object.fromEntries(formData)
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const rawData = Object.fromEntries(formData);
 
     startTransition(async () => {
       if (schema) {
-        const result = schema.safeParse(rawData)
+        const result = schema.safeParse(rawData);
         if (!result.success) {
-          setErrors(result.error.flatten().fieldErrors as Record<string, string>)
-          return
+          setErrors(result.error.flatten().fieldErrors as Record<string, string>);
+          return;
         }
-        await action(result.data)
+        await action(result.data);
       } else {
-        await action(rawData as T)
+        await action(rawData as T);
       }
-      onSuccess?.()
-    })
-  }
+      onSuccess?.();
+    });
+  };
 
   return (
     <FormContext.Provider value={{ isPending, errors }}>
@@ -406,20 +401,20 @@ function Form<T>({ action, schema, children, onSuccess }: FormProps<T>) {
         {children}
       </form>
     </FormContext.Provider>
-  )
+  );
 }
 ```
 
 ### Component Design Summary
 
-| Category | Pattern |
-|---|---|
-| Button / IconButton | `action` prop wraps handler in Transition; reflect `isPending` in UI |
-| Form | `startTransition` + validation + Error Boundary propagation |
-| Data display (Table, List) | `useSuspenseQuery`; `isFetching` drives `data-pending` |
-| Navigation | Delegate to TanStack Router's `<Link>` (auto-Transition) |
-| Layout | Provide `AsyncBoundary` (Suspense + ErrorBoundary) |
-| Modal / Dialog | Open action as Transition; internal content fetched via Suspense |
+| Category                   | Pattern                                                              |
+| -------------------------- | -------------------------------------------------------------------- |
+| Button / IconButton        | `action` prop wraps handler in Transition; reflect `isPending` in UI |
+| Form                       | `startTransition` + validation + Error Boundary propagation          |
+| Data display (Table, List) | `useSuspenseQuery`; `isFetching` drives `data-pending`               |
+| Navigation                 | Delegate to TanStack Router's `<Link>` (auto-Transition)             |
+| Layout                     | Provide `AsyncBoundary` (Suspense + ErrorBoundary)                   |
+| Modal / Dialog             | Open action as Transition; internal content fetched via Suspense     |
 
 ## TanStack Router Integration
 
@@ -428,16 +423,16 @@ function Form<T>({ action, schema, children, onSuccess }: FormProps<T>) {
 Loaders pre-fill the Query cache before the component renders. The component reads from cache via `useSuspenseQuery`. This eliminates loading waterfalls:
 
 ```tsx
-export const Route = createFileRoute('/posts/$postId')({
+export const Route = createFileRoute("/posts/$postId")({
   loader: ({ context: { queryClient }, params: { postId } }) =>
     queryClient.ensureQueryData(postQueryOptions(postId)),
   component: PostPage,
-})
+});
 
 function PostPage() {
-  const { postId } = Route.useParams()
-  const { data } = useSuspenseQuery(postQueryOptions(postId))
-  return <PostView post={data} />
+  const { postId } = Route.useParams();
+  const { data } = useSuspenseQuery(postQueryOptions(postId));
+  return <PostView post={data} />;
 }
 ```
 
@@ -448,15 +443,15 @@ The loader starts the fetch during navigation (which is itself a Transition). By
 TanStack Router automatically wraps `<Link>` and `<Form>` navigation in async Transitions. For programmatic navigation or other async operations, wrap manually:
 
 ```tsx
-const navigate = useNavigate()
-const [isPending, startTransition] = useTransition()
+const navigate = useNavigate();
+const [isPending, startTransition] = useTransition();
 
 const handleAction = () => {
   startTransition(async () => {
-    await performAction()
-    navigate({ to: '/result' })
-  })
-}
+    await performAction();
+    navigate({ to: "/result" });
+  });
+};
 ```
 
 ## Directory Structure

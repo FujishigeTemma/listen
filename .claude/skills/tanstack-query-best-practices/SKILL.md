@@ -32,6 +32,7 @@ TanStack Query is **not** a data fetching library — it's an **async state mana
 Since v5, `queryOptions()` is the preferred way to define queries — not custom hooks. This is TkDodo's strongest recommendation for modern codebases.
 
 Why `queryOptions` over custom hooks:
+
 - Custom hooks only work in components and other hooks. `queryOptions` works everywhere: hooks, route loaders, event handlers, server-side code.
 - Custom hooks share **logic** between components. But query definitions share **configuration**, which is better expressed as plain objects.
 - `queryOptions` co-locates `queryKey` + `queryFn` + options, making the type system carry query type info through `getQueryData`, `setQueryData`, and `invalidateQueries`.
@@ -142,15 +143,15 @@ useQuery({
 
 TanStack Query's defaults are aggressive on purpose — they keep data fresh:
 
-| Setting | Default | Guidance |
-|---------|---------|----------|
-| `staleTime` | `0` (instantly stale) | **Customize this.** It's your most important setting. Set it based on how often your data actually changes. |
-| `gcTime` | 5 minutes | Rarely needs changing. |
-| `refetchOnWindowFocus` | `true` | Keep it on in production. If you see "unexpected" refetches, this is likely why — and it's a feature. |
-| `refetchOnMount` | `true` | Keep it on unless you have a specific reason. |
-| `refetchOnReconnect` | `true` | Keep it on. |
-| `retry` | 3 (exponential backoff) | Good default. Set to `false` in tests. |
-| `networkMode` | `'online'` | Pauses queries when offline. Use `'offlineFirst'` if you have a service worker/cache layer (first request must fire for the SW to intercept). Use `'always'` for queries that don't need network (e.g., IndexedDB). |
+| Setting                | Default                 | Guidance                                                                                                                                                                                                            |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `staleTime`            | `0` (instantly stale)   | **Customize this.** It's your most important setting. Set it based on how often your data actually changes.                                                                                                         |
+| `gcTime`               | 5 minutes               | Rarely needs changing.                                                                                                                                                                                              |
+| `refetchOnWindowFocus` | `true`                  | Keep it on in production. If you see "unexpected" refetches, this is likely why — and it's a feature.                                                                                                               |
+| `refetchOnMount`       | `true`                  | Keep it on unless you have a specific reason.                                                                                                                                                                       |
+| `refetchOnReconnect`   | `true`                  | Keep it on.                                                                                                                                                                                                         |
+| `retry`                | 3 (exponential backoff) | Good default. Set to `false` in tests.                                                                                                                                                                              |
+| `networkMode`          | `'online'`              | Pauses queries when offline. Use `'offlineFirst'` if you have a service worker/cache layer (first request must fire for the SW to intercept). Use `'always'` for queries that don't need network (e.g., IndexedDB). |
 
 Only disable refetch flags if you truly understand why and your use case demands it. The defaults exist to keep your UI accurate.
 
@@ -177,6 +178,7 @@ return <Skeleton />;
 Why not check `isPending` first? Because during a background refetch failure, you'd replace perfectly good stale data with an error screen — confusing the user. Stale data is almost always better than nothing.
 
 Two status dimensions:
+
 - `status` (`pending` | `error` | `success`) tells you about **data** — do you have it or not?
 - `fetchStatus` (`fetching` | `paused` | `idle`) tells you about the **queryFn** — is it running?
 - `isPlaceholderData` — `true` when the displayed data is placeholder (from `placeholderData` option). Use it to show a visual hint (e.g., reduced opacity) so the user knows the data is temporary.
@@ -215,9 +217,11 @@ function useFilteredTodos(status: "done" | "open") {
 Three complementary approaches — use them together:
 
 ### 1. Inline error state
+
 Check `error` / `isError` in your component and render error UI. Best for component-specific error recovery.
 
 ### 2. Error Boundaries with `throwOnError`
+
 ```typescript
 useQuery({
   ...sessionQueries.detail(id),
@@ -225,10 +229,11 @@ useQuery({
 });
 
 // Or selectively:
-throwOnError: (error) => error.status >= 500  // Only server errors
+throwOnError: (error) => error.status >= 500; // Only server errors
 ```
 
 ### 3. Global QueryCache callbacks
+
 ```typescript
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -252,6 +257,7 @@ Note: `onSuccess` / `onError` / `onSettled` callbacks on `useQuery` were **remov
 ### `mutate` vs `mutateAsync`
 
 `useMutation` returns two ways to trigger the mutation:
+
 - **`mutate()`** — fire-and-forget. Handle results via the `onSuccess`/`onError` callbacks. This is the default choice.
 - **`mutateAsync()`** — returns a Promise. Use only when you need to `await` the result (e.g., sequential mutations). Remember to handle errors yourself — `mutateAsync` rejects on error.
 
@@ -312,6 +318,7 @@ export function useCreateSession() {
 ```
 
 Key mutation patterns:
+
 - **Await invalidation** if you want the mutation to stay in `isPending` until fresh data arrives: `onSuccess: async () => { await queryClient.invalidateQueries(...) }`
 - Invalidation only refetches **active** queries and marks the rest as stale — it's smart about network usage.
 - For mutations that return the updated entity, you can use `setQueryData` for instant UI updates, but invalidation is usually simpler.
@@ -332,7 +339,7 @@ useMutation({
 
     // 3. Optimistically update
     queryClient.setQueryData(todoQueries.all().queryKey, (old) =>
-      old?.map((t) => (t.id === todoId ? { ...t, done: !t.done } : t))
+      old?.map((t) => (t.id === todoId ? { ...t, done: !t.done } : t)),
     );
 
     return { previous };
@@ -395,22 +402,20 @@ declare module "@tanstack/react-query" {
 
 Two different mechanisms for showing data before a fetch completes:
 
-| | `initialData` | `placeholderData` |
-|---|---|---|
-| **Level** | Cache level | Observer level |
-| **Persisted?** | Yes, written to cache | No, never cached |
-| **staleTime** | Respected (can prevent refetch) | Ignored (always refetches) |
-| **On error** | Stays in cache | Disappears |
-| **Use for** | Pre-filling from another query | Loading skeletons, "fake" data |
+|                | `initialData`                   | `placeholderData`              |
+| -------------- | ------------------------------- | ------------------------------ |
+| **Level**      | Cache level                     | Observer level                 |
+| **Persisted?** | Yes, written to cache           | No, never cached               |
+| **staleTime**  | Respected (can prevent refetch) | Ignored (always refetches)     |
+| **On error**   | Stays in cache                  | Disappears                     |
+| **Use for**    | Pre-filling from another query  | Loading skeletons, "fake" data |
 
 ```typescript
 // Seed detail view from list cache
 useQuery({
   ...sessionQueries.detail(id),
   initialData: () =>
-    queryClient
-      .getQueryData(sessionQueries.archive().queryKey)
-      ?.find((s) => s.id === id),
+    queryClient.getQueryData(sessionQueries.archive().queryKey)?.find((s) => s.id === id),
   initialDataUpdatedAt: () =>
     queryClient.getQueryState(sessionQueries.archive().queryKey)?.dataUpdatedAt,
 });
@@ -446,6 +451,7 @@ function renderWithClient(ui: React.ReactElement) {
 ```
 
 Critical rules:
+
 - **New QueryClient per test** — shared clients leak cached data between tests.
 - **`retry: false`** — default 3 retries with exponential backoff will make error tests timeout.
 - **Never mock `useQuery` directly** — mock the API layer (network requests) instead. Mocking `useQuery` skips all React Query logic (caching, retries, dedup) and tests a fake version of your code.
@@ -478,6 +484,7 @@ function SessionPage() {
 ## Forms
 
 When forms need server data as defaults:
+
 - Copy server state to form state and set a high `staleTime` (background updates are irrelevant while editing).
 - For collaborative environments, keep background updates on and derive display from merged server + client state. Use controlled fields (not uncontrolled) so React can update values when server state changes.
 - React Hook Form's `values` API reacts to external value changes. Combine with `resetOptions: { keepDirtyValues: true }` to preserve user edits while syncing untouched fields from the server.
@@ -512,19 +519,19 @@ When all updates come through WebSocket, set `staleTime: Infinity` — time-base
 
 ## Anti-patterns
 
-| Don't | Instead |
-|-------|---------|
-| Pass generics to `useQuery` manually | Let TypeScript infer from `queryFn` |
-| Sync server data to Redux/Zustand | Let TanStack Query be the source of truth |
-| Use `setQueryData` as local state | Use `useState` for local state; `setQueryData` for cache updates after mutations |
-| Disable all refetch flags | Customize `staleTime` instead |
-| Use `onSuccess` to `setState` | Derive state from query data, or use global QueryCache callbacks |
-| Share QueryClient between tests | Create a new one per test |
-| Use inline functions for expensive `select` | Wrap in `useCallback` or extract to a stable reference |
-| Check `isPending` before `data` | Check `data` first, then error, loading as fallback |
-| Create custom hooks as the first abstraction | Use `queryOptions` factories first; wrap in hooks only when needed |
-| Use `prefetchQuery` in loaders | Use `fetchQuery` or `ensureQueryData` (they throw on error) |
-| Mock `useQuery` in tests | Mock the network layer (MSW) — mocking `useQuery` skips all React Query logic |
+| Don't                                        | Instead                                                                          |
+| -------------------------------------------- | -------------------------------------------------------------------------------- |
+| Pass generics to `useQuery` manually         | Let TypeScript infer from `queryFn`                                              |
+| Sync server data to Redux/Zustand            | Let TanStack Query be the source of truth                                        |
+| Use `setQueryData` as local state            | Use `useState` for local state; `setQueryData` for cache updates after mutations |
+| Disable all refetch flags                    | Customize `staleTime` instead                                                    |
+| Use `onSuccess` to `setState`                | Derive state from query data, or use global QueryCache callbacks                 |
+| Share QueryClient between tests              | Create a new one per test                                                        |
+| Use inline functions for expensive `select`  | Wrap in `useCallback` or extract to a stable reference                           |
+| Check `isPending` before `data`              | Check `data` first, then error, loading as fallback                              |
+| Create custom hooks as the first abstraction | Use `queryOptions` factories first; wrap in hooks only when needed               |
+| Use `prefetchQuery` in loaders               | Use `fetchQuery` or `ensureQueryData` (they throw on error)                      |
+| Mock `useQuery` in tests                     | Mock the network layer (MSW) — mocking `useQuery` skips all React Query logic    |
 
 ## Architecture Quick Reference
 
