@@ -1,5 +1,5 @@
-import type { Variables } from "../types";
 import type { DB } from "../lib/db";
+import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
 import { users } from "@listen/db";
 import { eq } from "drizzle-orm";

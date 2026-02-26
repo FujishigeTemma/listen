@@ -1,7 +1,7 @@
 import type { Variables } from "../types";
-import type { InferSelectModel } from "drizzle-orm";
 import { getAuth } from "@hono/clerk-auth";
 import { users } from "@listen/db";
+import type { InferSelectModel } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 

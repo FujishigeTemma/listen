@@ -1,5 +1,5 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
+import type { QueryClient } from "@tanstack/react-query";
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";

@@ -108,9 +108,7 @@ function PremiumCard({
           <Crown className="h-6 w-6 text-yellow-500" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold">
-            {isPremium ? "Premium Active" : "Upgrade to Premium"}
-          </h3>
+          <h3 className="font-semibold">{isPremium ? "Premium Active" : "Upgrade to Premium"}</h3>
           <ul className="mt-2 space-y-1 text-sm text-zinc-400">
             <li>Unlimited archive access (no 48h expiration)</li>
             <li>Download recordings for offline listening</li>
