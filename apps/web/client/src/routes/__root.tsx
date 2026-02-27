@@ -5,7 +5,7 @@ import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
 
 import { AuthProvider } from "../lib/clerk";
-import { useSyncUser } from "../lib/queries";
+import { useSyncUser } from "../queries/me";
 
 interface RouterContext {
   queryClient: QueryClient;

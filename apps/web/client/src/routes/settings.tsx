@@ -1,16 +1,27 @@
-import { SignInButton } from "@clerk/clerk-react";
+import { useAuth, SignInButton } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Settings, Crown, LogIn } from "lucide-react";
 
-import { useCurrentUser, useBillingStatus, useCreateCheckout } from "../lib/queries";
+import { useClient } from "../lib/client";
+import { billingQueries, useCreateCheckout } from "../queries/billing";
+import { meQueries } from "../queries/me";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const { data: user } = useCurrentUser();
-  const { data: billing } = useBillingStatus();
+  const client = useClient();
+  const { isSignedIn } = useAuth();
+  const { data: user } = useQuery({
+    ...meQueries.current(client),
+    enabled: Boolean(isSignedIn),
+  });
+  const { data: billing } = useQuery({
+    ...billingQueries.status(client),
+    enabled: Boolean(isSignedIn),
+  });
   const createCheckout = useCreateCheckout();
 
   const handleUpgrade = () => {

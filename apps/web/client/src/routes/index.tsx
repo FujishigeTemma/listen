@@ -1,18 +1,50 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Radio, Calendar } from "lucide-react";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";
-import { useLiveSession } from "../lib/queries";
+import { useClient } from "../lib/client";
+import { sessionQueries } from "../queries/sessions";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
-  const { data: liveSession, isLoading } = useLiveSession();
+  const client = useClient();
+  const { data: liveSession, isPending } = useQuery(sessionQueries.live(client));
 
-  if (isLoading) {
+  if (liveSession) {
+    return (
+      <div className="space-y-8">
+        {/* Live Banner */}
+        <div className="flex items-center gap-3 rounded-lg border border-red-800/50 bg-red-950/50 px-4 py-3">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+          <span className="font-medium text-red-400">LIVE NOW</span>
+          <span className="text-zinc-400">{liveSession.title ?? liveSession.id}</span>
+        </div>
+
+        {/* Player */}
+        <Player sessionId={liveSession.id} isLive />
+
+        {/* Track List */}
+        <div className="space-y-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Radio className="h-5 w-5" />
+            Now Playing
+          </h2>
+          {liveSession.tracks && liveSession.tracks.length > 0 ? (
+            <TrackList tracks={liveSession.tracks} />
+          ) : (
+            <div className="text-zinc-500">Tracklist will appear here</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isPending) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-zinc-500">Loading...</div>
@@ -20,36 +52,7 @@ function HomePage() {
     );
   }
 
-  if (!liveSession) {
-    return <OfflineState />;
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* Live Banner */}
-      <div className="flex items-center gap-3 rounded-lg border border-red-800/50 bg-red-950/50 px-4 py-3">
-        <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-        <span className="font-medium text-red-400">LIVE NOW</span>
-        <span className="text-zinc-400">{liveSession.title ?? liveSession.id}</span>
-      </div>
-
-      {/* Player */}
-      <Player sessionId={liveSession.id} isLive />
-
-      {/* Track List */}
-      <div className="space-y-4">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Radio className="h-5 w-5" />
-          Now Playing
-        </h2>
-        {liveSession.tracks && liveSession.tracks.length > 0 ? (
-          <TrackList tracks={liveSession.tracks} />
-        ) : (
-          <div className="text-zinc-500">Tracklist will appear here</div>
-        )}
-      </div>
-    </div>
-  );
+  return <OfflineState />;
 }
 
 function OfflineState() {

@@ -1,10 +1,13 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";
-import { useSession, useTracks } from "../lib/queries";
+import { useClient } from "../lib/client";
 import { formatDuration, formatDate } from "../lib/utils";
+import { sessionQueries } from "../queries/sessions";
+import { trackQueries } from "../queries/tracks";
 
 export const Route = createFileRoute("/s/$id")({
   component: SessionPage,
@@ -12,10 +15,14 @@ export const Route = createFileRoute("/s/$id")({
 
 function SessionPage() {
   const { id } = Route.useParams();
-  const { data: session, isLoading, error } = useSession(id);
-  const { data: tracks } = useTracks(id);
+  const client = useClient();
+  const { data: session, isPending, error } = useQuery(sessionQueries.detail(client, id));
 
-  if (isLoading) {
+  if (session) return <SessionContent session={session} />;
+
+  if (error) return <SessionNotFound />;
+
+  if (isPending) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-zinc-500">Loading...</div>
@@ -23,26 +30,21 @@ function SessionPage() {
     );
   }
 
-  if (error || !session) {
-    return (
-      <div className="space-y-4">
-        <Link to="/archive" className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100">
-          <ArrowLeft className="h-4 w-4" />
-          Back to archive
-        </Link>
-        <div className="py-20 text-center">
-          <h1 className="text-2xl font-bold">Session Not Found</h1>
-          <p className="mt-2 text-zinc-500">This session may have expired or does not exist.</p>
-        </div>
-      </div>
-    );
-  }
+  return <></>;
+}
 
+type SessionDetail = Awaited<
+  ReturnType<NonNullable<ReturnType<typeof sessionQueries.detail>["queryFn"]>>
+>;
+
+function SessionContent({ session }: { session: SessionDetail }) {
+  const { id } = Route.useParams();
+  const client = useClient();
+  const { data: tracks } = useQuery(trackQueries.bySession(client, id));
   const isLive = session.state === "live";
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="space-y-4">
         <Link
           to={isLive ? "/" : "/archive"}
@@ -60,10 +62,8 @@ function SessionPage() {
         />
       </div>
 
-      {/* Player */}
       <Player sessionId={session.id} isLive={isLive} />
 
-      {/* Track List */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Tracklist</h2>
         {tracks && tracks.length > 0 ? (
@@ -71,6 +71,21 @@ function SessionPage() {
         ) : (
           <div className="text-zinc-500">No tracklist available</div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function SessionNotFound() {
+  return (
+    <div className="space-y-4">
+      <Link to="/archive" className="flex items-center gap-1 text-zinc-400 hover:text-zinc-100">
+        <ArrowLeft className="h-4 w-4" />
+        Back to archive
+      </Link>
+      <div className="py-20 text-center">
+        <h1 className="text-2xl font-bold">Session Not Found</h1>
+        <p className="mt-2 text-zinc-500">This session may have expired or does not exist.</p>
       </div>
     </div>
   );
