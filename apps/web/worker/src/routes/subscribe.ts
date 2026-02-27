@@ -1,9 +1,9 @@
+import type { Variables } from "../types";
 import { vValidator } from "@hono/valibot-validator";
 import { subscribers } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import * as v from "valibot";
-import type { Variables } from "../types";
 
 import { createDB } from "../lib/db";
 
@@ -46,13 +46,17 @@ const subscribeRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
     return c.json({ message: "Subscribed successfully" }, 201);
   })
-  .delete("/", vValidator("json", v.object({ email: v.pipe(v.string(), v.email()) })), async (c) => {
-    const { email } = c.req.valid("json");
-    const db = createDB(c.env.DB);
+  .delete(
+    "/",
+    vValidator("json", v.object({ email: v.pipe(v.string(), v.email()) })),
+    async (c) => {
+      const { email } = c.req.valid("json");
+      const db = createDB(c.env.DB);
 
-    await db.delete(subscribers).where(eq(subscribers.email, email));
+      await db.delete(subscribers).where(eq(subscribers.email, email));
 
-    return c.json({ message: "Unsubscribed" });
-  });
+      return c.json({ message: "Unsubscribed" });
+    },
+  );
 
 export { subscribeRoutes };

@@ -1,32 +1,36 @@
 import type { Variables } from "../types";
+import { getAuth } from "@hono/clerk-auth";
+import { users } from "@listen/db";
+import type { InferSelectModel } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 
-// Stub auth middleware - will be replaced with Clerk integration
-export const authMiddleware = createMiddleware<{
-  Bindings: Env;
-  Variables: Variables;
-}>(async (_c, next) => {
-  // For now, just pass through without auth
-  // TODO: Implement Clerk auth
-  await next();
-});
+import { createDB } from "../lib/db";
 
-// Optional auth - doesn't require authentication but extracts user if present
-export const optionalAuthMiddleware = createMiddleware<{
-  Bindings: Env;
-  Variables: Variables;
-}>(async (_c, next) => {
-  // For now, just pass through
-  // TODO: Extract user from Clerk token if present
-  await next();
-});
+function checkPremium(user: InferSelectModel<typeof users>): boolean {
+  if (!user.isPremium) return false;
+  if (!user.premiumExpiresAt) return true;
+  return user.premiumExpiresAt > Math.floor(Date.now() / 1000);
+}
 
-// Require premium subscription
-export const premiumMiddleware = createMiddleware<{
+/** Look up authenticated user in DB and populate context variables. */
+export const userMiddleware = createMiddleware<{
   Bindings: Env;
   Variables: Variables;
-}>(async (_c, next) => {
-  // For now, just pass through
-  // TODO: Check premium status
-  await next();
+}>(async (c, next) => {
+  const userId = getAuth(c)?.userId;
+  if (!userId) return next();
+
+  c.set("userId", userId);
+
+  const user = await createDB(c.env.DB).query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (user) {
+    c.set("userEmail", user.email);
+    c.set("isPremium", checkPremium(user));
+  }
+
+  return next();
 });

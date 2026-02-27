@@ -1,6 +1,11 @@
+import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
 import type { QueryClient } from "@tanstack/react-query";
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
-import { Radio, Archive, Mail, Settings } from "lucide-react";
+import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
+import { useEffect } from "react";
+
+import { AuthProvider } from "../lib/clerk";
+import { useSyncUser } from "../lib/queries";
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -12,18 +17,32 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <Header />
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Outlet />
-      </main>
-      <footer className="border-t border-zinc-800 py-8">
-        <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
-          DJ Audio Livestream
-        </div>
-      </footer>
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100">
+        <Header />
+        <main className="mx-auto max-w-4xl px-4 py-8">
+          <Outlet />
+        </main>
+        <footer className="border-t border-zinc-800 py-8">
+          <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
+            DJ Audio Livestream
+          </div>
+        </footer>
+        <SignedIn>
+          <UserSync />
+        </SignedIn>
+      </div>
+    </AuthProvider>
   );
+}
+
+function UserSync() {
+  const sync = useSyncUser();
+  useEffect(() => {
+    sync.mutate();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return <></>;
 }
 
 function Header() {
@@ -34,7 +53,10 @@ function Header() {
           <Radio className="h-6 w-6 text-green-500" />
           Listen
         </Link>
-        <Navigation />
+        <div className="flex items-center gap-4">
+          <Navigation />
+          <AuthSection />
+        </div>
       </div>
     </header>
   );
@@ -48,6 +70,24 @@ function Navigation() {
       <NavLink to="/subscribe" label="Subscribe" icon={Mail} />
       <NavLink to="/settings" label="Settings" icon={Settings} />
     </nav>
+  );
+}
+
+function AuthSection() {
+  return (
+    <div className="flex items-center">
+      <SignedIn>
+        <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
+      </SignedIn>
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button className="flex items-center gap-1 rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">
+            <LogIn className="h-4 w-4" />
+            Sign In
+          </button>
+        </SignInButton>
+      </SignedOut>
+    </div>
   );
 }
 

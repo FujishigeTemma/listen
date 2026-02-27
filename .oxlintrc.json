@@ -27,7 +27,7 @@
     "eslint/no-magic-numbers": "off", // allow
     "eslint/no-inline-comments": "off", // allow
     "eslint/no-warning-comments": "off", // allow
-    "import/no-namespace": ["error", { "ignore": ["valibot", "@listen/db"]}],
+    "import/no-namespace": ["error", { "ignore": ["valibot", "@listen/db"] }],
     "react/react-in-jsx-scope": "off", // not necessary on React 17+
     "react/jsx-max-depth": ["error", { "max": 4 }], // 4 should be enough
     "react/jsx-no-literals": "off", // allow string literals

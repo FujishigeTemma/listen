@@ -1,12 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import type { Client } from "./client";
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 
-import { client } from "./client";
+import { createClient } from "./client";
 
-type TracksResponse = InferResponseType<(typeof client.tracks)[":sessionId"]["$get"]>;
+type TracksResponse = InferResponseType<Client["tracks"][":sessionId"]["$get"]>;
 export type Track = TracksResponse extends { tracks: (infer T)[] } ? T : never;
 
+function useClient() {
+  const { getToken } = useAuth();
+  return createClient(getToken);
+}
+
 export function useLiveSession() {
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", "live"],
     queryFn: async () => {
@@ -15,11 +23,12 @@ export function useLiveSession() {
       const data = await res.json();
       return data.session;
     },
-    refetchInterval: 10_000, // Poll every 10 seconds
+    refetchInterval: 10_000,
   });
 }
 
 export function useArchiveSessions() {
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", "archive"],
     queryFn: async () => {
@@ -32,6 +41,7 @@ export function useArchiveSessions() {
 }
 
 export function useSession(id: string) {
+  const client = useClient();
   return useQuery({
     queryKey: ["sessions", id],
     queryFn: async () => {
@@ -44,6 +54,7 @@ export function useSession(id: string) {
 }
 
 export function useTracks(sessionId: string) {
+  const client = useClient();
   return useQuery({
     queryKey: ["tracks", sessionId],
     queryFn: async () => {
@@ -56,6 +67,7 @@ export function useTracks(sessionId: string) {
 }
 
 export function useSubscribe() {
+  const client = useClient();
   return useMutation({
     mutationFn: async (data: {
       email: string;
@@ -70,6 +82,8 @@ export function useSubscribe() {
 }
 
 export function useCurrentUser() {
+  const client = useClient();
+  const { isSignedIn } = useAuth();
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
@@ -78,10 +92,28 @@ export function useCurrentUser() {
       const data = await res.json();
       return data.user;
     },
+    enabled: Boolean(isSignedIn),
+  });
+}
+
+export function useSyncUser() {
+  const client = useClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await client.me.sync.$post();
+      if (!res.ok) throw new Error("Failed to sync user");
+      return res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 
 export function useBillingStatus() {
+  const client = useClient();
+  const { isSignedIn } = useAuth();
   return useQuery({
     queryKey: ["billing", "status"],
     queryFn: async () => {
@@ -89,10 +121,12 @@ export function useBillingStatus() {
       if (!res.ok) throw new Error("Failed to fetch billing status");
       return res.json();
     },
+    enabled: Boolean(isSignedIn),
   });
 }
 
 export function useCreateCheckout() {
+  const client = useClient();
   return useMutation({
     mutationFn: async () => {
       const res = await client.billing.checkout.$post();
