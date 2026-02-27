@@ -1,9 +1,10 @@
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Mail, Bell, Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-import { useSubscribe } from "../lib/queries";
+import { useClient } from "../lib/client";
 
 export const Route = createFileRoute("/subscribe")({
   component: SubscribePage,
@@ -14,7 +15,18 @@ function SubscribePage() {
   const [notifyLive, setNotifyLive] = useState(true);
   const [notifyScheduled, setNotifyScheduled] = useState(true);
   const [success, setSuccess] = useState(false);
-  const subscribe = useSubscribe();
+  const client = useClient();
+  const subscribe = useMutation({
+    mutationFn: async (data: {
+      email: string;
+      notifyLive?: boolean;
+      notifyScheduled?: boolean;
+    }) => {
+      const res = await client.subscribe.$post({ json: data });
+      if (!res.ok) throw new Error("Failed to subscribe");
+      return res.json();
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

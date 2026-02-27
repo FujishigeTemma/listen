@@ -1,4 +1,4 @@
-import type { Track } from "../lib/queries";
+import type { Track } from "../queries/tracks";
 
 import { formatTimestamp } from "../lib/utils";
 

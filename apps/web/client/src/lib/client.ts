@@ -1,4 +1,5 @@
 import type { AppType } from "../../../worker/src/index";
+import { useAuth } from "@clerk/clerk-react";
 import { hc } from "hono/client";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8787";
@@ -14,4 +15,9 @@ export function createClient(getToken: () => Promise<string | null>): Client {
       return fetch(input, { ...init, headers });
     },
   });
+}
+
+export function useClient(): Client {
+  const { getToken } = useAuth();
+  return createClient(getToken);
 }

@@ -1,15 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Archive, Clock, Calendar } from "lucide-react";
 
-import { useArchiveSessions } from "../lib/queries";
+import { useClient } from "../lib/client";
 import { formatDuration, formatDate } from "../lib/utils";
+import { sessionQueries } from "../queries/sessions";
 
 export const Route = createFileRoute("/archive")({
   component: ArchivePage,
 });
 
 function ArchivePage() {
-  const { data: sessions, isLoading } = useArchiveSessions();
+  const client = useClient();
+  const { data: sessions, isPending } = useQuery(sessionQueries.archive(client));
 
   return (
     <div className="space-y-8">
@@ -21,7 +24,7 @@ function ArchivePage() {
         <p className="mt-1 text-zinc-500">Past sessions available for replay</p>
       </div>
 
-      <SessionList sessions={sessions} isLoading={isLoading} />
+      <SessionList sessions={sessions} isPending={isPending} />
     </div>
   );
 }
@@ -37,26 +40,26 @@ interface Session {
 
 function SessionList({
   sessions,
-  isLoading,
+  isPending,
 }: {
   sessions: Session[] | undefined;
-  isLoading: boolean;
+  isPending: boolean;
 }) {
-  if (isLoading) {
+  if (sessions && sessions.length > 0) {
+    return (
+      <div className="space-y-2">
+        {sessions.map((session) => (
+          <SessionCard key={session.id} session={session} />
+        ))}
+      </div>
+    );
+  }
+
+  if (isPending) {
     return <div className="text-zinc-500">Loading...</div>;
   }
 
-  if (sessions?.length === 0) {
-    return <EmptyState />;
-  }
-
-  return (
-    <div className="space-y-2">
-      {sessions?.map((session) => (
-        <SessionCard key={session.id} session={session} />
-      ))}
-    </div>
-  );
+  return <EmptyState />;
 }
 
 function EmptyState() {
