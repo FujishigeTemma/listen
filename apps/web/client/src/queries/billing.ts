@@ -1,6 +1,7 @@
 import type { Client } from "../lib/client";
-import { useClient } from "../lib/client";
 import { queryOptions, useMutation } from "@tanstack/react-query";
+
+import { useClient } from "../lib/client";
 
 export const billingQueries = {
   all: () => ["billing"] as const,
