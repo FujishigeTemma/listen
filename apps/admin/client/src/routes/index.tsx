@@ -1,9 +1,9 @@
+import { formatTimestamp } from "@listen/shared";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Plus, Radio, Calendar, Archive } from "lucide-react";
 
 import { useHealth, useSessions, useCreateSession } from "../lib/queries";
-import { formatTimestamp } from "@listen/shared";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,

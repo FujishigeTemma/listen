@@ -1,5 +1,6 @@
-import type { Client } from "../lib/client";
 import { queryOptions } from "@tanstack/react-query";
+
+import { getClient } from "../lib/client";
 
 export interface Track {
   id: number;
@@ -12,13 +13,19 @@ export interface Track {
 }
 
 export const trackQueries = {
-  all: () => ["tracks"] as const,
-
-  bySession: (client: Client, sessionId: string) =>
+  all: () =>
     queryOptions({
-      queryKey: [...trackQueries.all(), sessionId] as const,
+      queryKey: ["tracks"] as const,
+    }),
+
+  bySession: (sessionId: string) =>
+    queryOptions({
+      queryKey: [...trackQueries.all().queryKey, sessionId] as const,
       queryFn: async () => {
-        const res = await client.tracks[":sessionId"].$get({ param: { sessionId } });
+        const client = getClient();
+        const res = await client.tracks[":sessionId"].$get({
+          param: { sessionId },
+        });
         if (!res.ok) throw new Error("Failed to fetch tracks");
         return res.json();
       },

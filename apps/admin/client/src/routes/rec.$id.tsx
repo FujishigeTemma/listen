@@ -1,9 +1,9 @@
+import { formatTimestamp } from "@listen/shared";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Play, Square, Clock, List } from "lucide-react";
 
 import { useSession, useHealth, useStartSession, useStopSession, useTracks } from "../lib/queries";
-import { formatTimestamp } from "@listen/shared";
 
 export const Route = createFileRoute("/rec/$id")({
   component: RecordingPage,
@@ -40,7 +40,9 @@ function RecordingPage() {
           <h1 className="text-2xl font-bold">{session.title ?? session.id}</h1>
           <div className="mt-1 text-zinc-500">
             {session.state === "scheduled" && session.scheduledAt && (
-              <span>Scheduled for {dayjs.unix(session.scheduledAt).format("YYYY/MM/DD HH:mm")}</span>
+              <span>
+                Scheduled for {dayjs.unix(session.scheduledAt).format("YYYY/MM/DD HH:mm")}
+              </span>
             )}
             {session.state === "live" && session.startedAt && (
               <span>Started at {dayjs.unix(session.startedAt).format("YYYY/MM/DD HH:mm")}</span>
@@ -64,7 +66,8 @@ function RecordingPage() {
               </div>
               <div className="flex items-center gap-2 text-zinc-400">
                 <Clock className="h-4 w-4" />
-                {health?.recordingDuration != undefined && formatTimestamp(health.recordingDuration)}
+                {health?.recordingDuration != undefined &&
+                  formatTimestamp(health.recordingDuration)}
               </div>
               <button
                 onClick={() => stopSession.mutate(id)}
@@ -102,7 +105,9 @@ function RecordingPage() {
             {session.expiresAt && (
               <div>
                 <span className="text-zinc-500">Expires</span>
-                <div className="font-medium">{dayjs.unix(session.expiresAt).format("YYYY/MM/DD HH:mm")}</div>
+                <div className="font-medium">
+                  {dayjs.unix(session.expiresAt).format("YYYY/MM/DD HH:mm")}
+                </div>
               </div>
             )}
           </div>

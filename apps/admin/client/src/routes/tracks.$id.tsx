@@ -1,4 +1,5 @@
 import type { tracks } from "@listen/db";
+import { formatTimestamp } from "@listen/shared";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { InferSelectModel } from "drizzle-orm";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
@@ -11,7 +12,6 @@ import {
   useTracks,
   useUpdateTrack,
 } from "../lib/queries";
-import { formatTimestamp } from "@listen/shared";
 
 type Track = InferSelectModel<typeof tracks>;
 

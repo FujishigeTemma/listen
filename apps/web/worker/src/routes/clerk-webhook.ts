@@ -1,3 +1,4 @@
+import type { DB } from "../lib/db";
 import type { Variables } from "../types";
 import type { WebhookEvent } from "@clerk/backend/webhooks";
 import { verifyWebhook } from "@clerk/backend/webhooks";
@@ -5,7 +6,6 @@ import { users } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
-import type { DB } from "../lib/db";
 import { createDB } from "../lib/db";
 import { upsertUser } from "../lib/user";
 
@@ -38,23 +38,26 @@ async function handleEvent(db: DB, evt: WebhookEvent) {
   }
 }
 
-const clerkWebhookRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().post("/", async (c) => {
-  const signingSecret = c.env.CLERK_WEBHOOK_SIGNING_SECRET;
-  if (!signingSecret) {
-    return c.json({ error: "Webhook not configured" }, 500);
-  }
+const clerkWebhookRoutes = new Hono<{ Bindings: Env; Variables: Variables }>().post(
+  "/",
+  async (c) => {
+    const signingSecret = c.env.CLERK_WEBHOOK_SIGNING_SECRET;
+    if (!signingSecret) {
+      return c.json({ error: "Webhook not configured" }, 500);
+    }
 
-  const evt = await verifyWebhook(c.req.raw, { signingSecret }).catch((error: unknown) => {
-    console.error("Clerk webhook verification failed:", error);
-    return undefined;
-  });
-  if (!evt) {
-    return c.json({ error: "Verification failed" }, 400);
-  }
+    const evt = await verifyWebhook(c.req.raw, { signingSecret }).catch((error: unknown) => {
+      console.error("Clerk webhook verification failed:", error);
+      return undefined;
+    });
+    if (!evt) {
+      return c.json({ error: "Verification failed" }, 400);
+    }
 
-  await handleEvent(createDB(c.env.DB), evt);
+    await handleEvent(createDB(c.env.DB), evt);
 
-  return c.json({ success: true });
-});
+    return c.json({ success: true });
+  },
+);
 
 export { clerkWebhookRoutes };

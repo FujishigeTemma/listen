@@ -1,15 +1,18 @@
-import type { Client } from "../lib/client";
 import { queryOptions, useMutation } from "@tanstack/react-query";
 
-import { useClient } from "../lib/client";
+import { getClient } from "../lib/client";
 
 export const billingQueries = {
-  all: () => ["billing"] as const,
-
-  status: (client: Client) =>
+  all: () =>
     queryOptions({
-      queryKey: [...billingQueries.all(), "status"] as const,
+      queryKey: ["billing"] as const,
+    }),
+
+  status: () =>
+    queryOptions({
+      queryKey: [...billingQueries.all().queryKey, "status"] as const,
       queryFn: async () => {
+        const client = getClient();
         const res = await client.billing.status.$get();
         if (!res.ok) throw new Error("Failed to fetch billing status");
         return res.json();
@@ -18,12 +21,15 @@ export const billingQueries = {
 };
 
 export function useCreateCheckout() {
-  const client = useClient();
   return useMutation({
     mutationFn: async () => {
+      const client = getClient();
       const res = await client.billing.checkout.$post();
       if (!res.ok) throw new Error("Failed to create checkout");
       return res.json();
+    },
+    onSuccess: (data) => {
+      window.location.href = data.checkoutUrl;
     },
   });
 }

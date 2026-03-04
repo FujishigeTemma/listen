@@ -24,10 +24,7 @@ export const userMiddleware = createMiddleware<{
     c.set("userEmail", user.email);
 
     const activeSubscription = await db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.userId, user.id),
-        eq(subscriptions.status, "active"),
-      ),
+      where: and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "active")),
     });
 
     c.set("isPremium", Boolean(activeSubscription));

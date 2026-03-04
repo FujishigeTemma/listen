@@ -1,43 +1,32 @@
-import { useAuth, SignInButton } from "@clerk/clerk-react";
-import { useQuery } from "@tanstack/react-query";
+import type { Track } from "../queries/tracks";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Radio, Calendar, Lock, LogIn } from "lucide-react";
+import { Radio, Calendar } from "lucide-react";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";
-import { useClient } from "../lib/client";
-import { useCreateCheckout } from "../queries/billing";
+import { TracklistLocked } from "../components/tracklist-locked";
 import { sessionQueries } from "../queries/sessions";
-import type { Track } from "../queries/tracks";
 import { trackQueries } from "../queries/tracks";
 
 export const Route = createFileRoute("/")({
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(sessionQueries.live()),
   component: HomePage,
 });
 
 function HomePage() {
-  const client = useClient();
-  const { data: liveSession, isPending } = useQuery(sessionQueries.live(client));
+  const { data: liveSession } = useSuspenseQuery(sessionQueries.live());
 
   if (liveSession) {
     return <LiveView session={liveSession} />;
-  }
-
-  if (isPending) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-zinc-500">Loading...</div>
-      </div>
-    );
   }
 
   return <OfflineState />;
 }
 
 function LiveView({ session }: { session: { id: string; title: string | null } }) {
-  const client = useClient();
   const { data: trackData } = useQuery({
-    ...trackQueries.bySession(client, session.id),
+    ...trackQueries.bySession(session.id),
     refetchInterval: 30_000,
   });
 
@@ -70,44 +59,6 @@ function LiveTrackContent({
   if (trackData?.requiresPremium) return <TracklistLocked />;
   if (trackData && trackData.tracks.length > 0) return <TrackList tracks={trackData.tracks} />;
   return <div className="text-zinc-500">Tracklist will appear here</div>;
-}
-
-function TracklistLocked() {
-  const { isSignedIn } = useAuth();
-  const createCheckout = useCreateCheckout();
-
-  const handleUpgrade = () => {
-    createCheckout.mutate(undefined, {
-      onSuccess: (data) => {
-        window.location.href = data.checkoutUrl;
-      },
-    });
-  };
-
-  return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-center">
-      <Lock className="mx-auto h-6 w-6 text-zinc-500" />
-      <p className="mt-2 text-sm text-zinc-500">
-        Tracklist is available for paid account holders.
-      </p>
-      {isSignedIn ? (
-        <button
-          onClick={handleUpgrade}
-          disabled={createCheckout.isPending}
-          className="mt-3 rounded-lg bg-yellow-600 px-4 py-1.5 text-sm font-medium text-black hover:bg-yellow-500 disabled:opacity-50"
-        >
-          {createCheckout.isPending ? "Loading..." : "Upgrade"}
-        </button>
-      ) : (
-        <SignInButton mode="modal">
-          <button className="mt-3 flex items-center gap-1.5 mx-auto rounded-lg border border-zinc-700 px-4 py-1.5 text-sm hover:bg-zinc-800">
-            <LogIn className="h-3.5 w-3.5" />
-            Sign in
-          </button>
-        </SignInButton>
-      )}
-    </div>
-  );
 }
 
 function OfflineState() {

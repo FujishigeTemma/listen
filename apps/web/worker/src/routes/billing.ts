@@ -1,3 +1,4 @@
+import type { DB } from "../lib/db";
 import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
 import { subscriptions, users } from "@listen/db";
@@ -6,7 +7,6 @@ import { Polar } from "@polar-sh/sdk";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
-import type { DB } from "../lib/db";
 import { createDB } from "../lib/db";
 import { handleSubscriptionEvent, isSubscriptionStatus } from "../lib/polar";
 import { upsertUser } from "../lib/user";

@@ -1,13 +1,18 @@
-import type { Client } from "../lib/client";
 import { queryOptions } from "@tanstack/react-query";
 
-export const sessionQueries = {
-  all: () => ["sessions"] as const,
+import { getClient } from "../lib/client";
 
-  live: (client: Client) =>
+export const sessionQueries = {
+  all: () =>
     queryOptions({
-      queryKey: [...sessionQueries.all(), "live"] as const,
+      queryKey: ["sessions"] as const,
+    }),
+
+  live: () =>
+    queryOptions({
+      queryKey: [...sessionQueries.all().queryKey, "live"] as const,
       queryFn: async () => {
+        const client = getClient();
         const res = await client.sessions.live.$get();
         if (!res.ok) throw new Error("Failed to fetch live session");
         const data = await res.json();
@@ -16,20 +21,22 @@ export const sessionQueries = {
       refetchInterval: 10_000,
     }),
 
-  archive: (client: Client) =>
+  archive: () =>
     queryOptions({
-      queryKey: [...sessionQueries.all(), "archive"] as const,
+      queryKey: [...sessionQueries.all().queryKey, "archive"] as const,
       queryFn: async () => {
+        const client = getClient();
         const res = await client.sessions.archive.$get();
         if (!res.ok) throw new Error("Failed to fetch archive");
         return res.json();
       },
     }),
 
-  detail: (client: Client, id: string) =>
+  detail: (id: string) =>
     queryOptions({
-      queryKey: [...sessionQueries.all(), id] as const,
+      queryKey: [...sessionQueries.all().queryKey, id] as const,
       queryFn: async () => {
+        const client = getClient();
         const res = await client.sessions[":id"].$get({ param: { id } });
         if (!res.ok) throw new Error("Failed to fetch session");
         const data = await res.json();

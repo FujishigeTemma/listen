@@ -1,7 +1,7 @@
 import type { DB } from "./db";
 import { users, subscriptions } from "@listen/db";
-import dayjs from "dayjs";
 import type { Subscription as PolarSubscription } from "@polar-sh/sdk/models/components/subscription";
+import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 
 // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
@@ -11,9 +11,24 @@ function toUnixTimestamp(date: Date | null | undefined): number | null {
   return dayjs(date).unix();
 }
 
-export type SubscriptionStatus = "active" | "canceled" | "past_due" | "unpaid" | "incomplete" | "trialing" | "revoked";
+export type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "unpaid"
+  | "incomplete"
+  | "trialing"
+  | "revoked";
 
-const validStatuses: readonly string[] = ["active", "canceled", "past_due", "unpaid", "incomplete", "trialing", "revoked"];
+const validStatuses: readonly string[] = [
+  "active",
+  "canceled",
+  "past_due",
+  "unpaid",
+  "incomplete",
+  "trialing",
+  "revoked",
+];
 
 export function isSubscriptionStatus(status: string): status is SubscriptionStatus {
   return validStatuses.includes(status);
@@ -48,17 +63,19 @@ async function upsertSubscription(
       })
       .where(eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId));
   } else {
-    await db.insert(subscriptions).values([{
-      userId,
-      polarSubscriptionId: data.polarSubscriptionId,
-      polarProductId: data.polarProductId,
-      status: data.status,
-      currentPeriodStart: data.currentPeriodStart,
-      currentPeriodEnd: data.currentPeriodEnd,
-      cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-      createdAt: now,
-      updatedAt: now,
-    }]);
+    await db.insert(subscriptions).values([
+      {
+        userId,
+        polarSubscriptionId: data.polarSubscriptionId,
+        polarProductId: data.polarProductId,
+        status: data.status,
+        currentPeriodStart: data.currentPeriodStart,
+        currentPeriodEnd: data.currentPeriodEnd,
+        cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
   }
 }
 
@@ -72,7 +89,7 @@ export async function handleSubscriptionEvent(
   sub: PolarSubscription,
   status: SubscriptionStatus,
 ) {
-  const {email} = sub.customer;
+  const { email } = sub.customer;
   const polarCustomerId = sub.customer.id;
 
   // User must already exist (created via Clerk login + /me/sync).

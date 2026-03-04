@@ -1,37 +1,28 @@
 import { SignInButton, useAuth } from "@clerk/clerk-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Bell, BellOff, Crown, LogIn, Settings } from "lucide-react";
 
-import { useClient } from "../lib/client";
 import { billingQueries, useCreateCheckout } from "../queries/billing";
 import { meQueries } from "../queries/me";
+import { notificationQueries, useToggleNotification } from "../queries/notifications";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const client = useClient();
   const { isSignedIn } = useAuth();
   const { data: user } = useQuery({
-    ...meQueries.current(client),
+    ...meQueries.current(),
     enabled: Boolean(isSignedIn),
   });
   const { data: billing } = useQuery({
-    ...billingQueries.status(client),
+    ...billingQueries.status(),
     enabled: Boolean(isSignedIn),
   });
   const createCheckout = useCreateCheckout();
-
-  const handleUpgrade = () => {
-    createCheckout.mutate(undefined, {
-      onSuccess: (data) => {
-        window.location.href = data.checkoutUrl;
-      },
-    });
-  };
 
   return (
     <div className="space-y-8">
@@ -64,7 +55,7 @@ function SettingsPage() {
         <PremiumCard
           isPremium={billing?.isPremium ?? false}
           subscription={billing?.subscription}
-          onUpgrade={handleUpgrade}
+          onUpgrade={() => createCheckout.mutate()}
           isLoading={createCheckout.isPending}
         />
       </section>
@@ -108,33 +99,8 @@ function SignInPrompt() {
 }
 
 function NotificationCard() {
-  const client = useClient();
-  const queryClient = useQueryClient();
-
-  const { data: status } = useQuery({
-    queryKey: ["notifications", "status"],
-    queryFn: async () => {
-      const res = await client.notifications.$get();
-      if (!res.ok) throw new Error("Failed to fetch notification status");
-      return res.json();
-    },
-  });
-
-  const toggle = useMutation({
-    mutationFn: async (enable: boolean) => {
-      if (enable) {
-        const res = await client.notifications.$post();
-        if (!res.ok) throw new Error("Failed to enable notifications");
-      } else {
-        const res = await client.notifications.$delete();
-        if (!res.ok) throw new Error("Failed to disable notifications");
-      }
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["notifications", "status"] });
-    },
-  });
-
+  const { data: status } = useQuery(notificationQueries.status());
+  const toggle = useToggleNotification();
   const isEnabled = status?.enabled ?? false;
 
   return (

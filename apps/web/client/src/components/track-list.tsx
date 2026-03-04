@@ -1,5 +1,4 @@
 import type { Track } from "../queries/tracks";
-
 import { formatTimestamp } from "@listen/shared";
 
 const NOT_FOUND = -1;

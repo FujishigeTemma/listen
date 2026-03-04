@@ -1,10 +1,12 @@
-import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton, SignInButton, useAuth } from "@clerk/clerk-react";
 import type { QueryClient } from "@tanstack/react-query";
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { Radio, Archive, Bell, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
 
+import { AsyncBoundary } from "../components/async-boundary";
 import { AuthProvider } from "../lib/clerk";
+import { setGetToken } from "../lib/client";
 import { useSyncUser } from "../queries/me";
 
 interface RouterContext {
@@ -21,7 +23,9 @@ function RootLayout() {
       <div className="min-h-screen bg-zinc-950 text-zinc-100">
         <Header />
         <main className="mx-auto max-w-4xl px-4 py-8">
-          <Outlet />
+          <AsyncBoundary>
+            <Outlet />
+          </AsyncBoundary>
         </main>
         <footer className="border-t border-zinc-800 py-8">
           <div className="mx-auto max-w-4xl px-4 text-center text-sm text-zinc-500">
@@ -29,11 +33,20 @@ function RootLayout() {
           </div>
         </footer>
         <SignedIn>
+          <ClientInit />
           <UserSync />
         </SignedIn>
       </div>
     </AuthProvider>
   );
+}
+
+function ClientInit() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setGetToken(getToken);
+  }, [getToken]);
+  return <></>;
 }
 
 function UserSync() {

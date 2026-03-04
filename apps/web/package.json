@@ -28,6 +28,7 @@
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-error-boundary": "^6.1.1",
     "tailwind-merge": "^3.4.0",
     "valibot": "catalog:"
   },
