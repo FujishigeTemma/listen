@@ -7,8 +7,8 @@ import { logger } from "hono/logger";
 import { userMiddleware } from "./middleware/auth";
 import { billingRoutes } from "./routes/billing";
 import { meRoutes } from "./routes/me";
+import { notificationRoutes } from "./routes/notifications";
 import { sessionsRoutes } from "./routes/sessions";
-import { subscribeRoutes } from "./routes/subscribe";
 import { tracksRoutes } from "./routes/tracks";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -18,7 +18,7 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>()
   .use("*", userMiddleware)
   .route("/sessions", sessionsRoutes)
   .route("/tracks", tracksRoutes)
-  .route("/subscribe", subscribeRoutes)
+  .route("/notifications", notificationRoutes)
   .route("/billing", billingRoutes)
   .route("/me", meRoutes)
   .get("*", async (c) => c.env.ASSETS.fetch(c.req.raw));

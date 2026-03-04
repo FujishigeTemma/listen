@@ -1,4 +1,3 @@
-import type { DB } from "../lib/db";
 import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
 import { users } from "@listen/db";
@@ -6,25 +5,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { createDB } from "../lib/db";
-
-async function upsertUser(db: DB, userId: string, email: string | undefined) {
-  const existing = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-  });
-
-  if (existing) {
-    if (email && existing.email !== email) {
-      await db.update(users).set({ email }).where(eq(users.id, userId));
-    }
-  } else if (email) {
-    await db.insert(users).values({
-      id: userId,
-      email,
-      isPremium: false,
-      createdAt: Math.floor(Date.now() / 1000),
-    });
-  }
-}
+import { upsertUser } from "../lib/user";
 
 const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   .get("/", async (c) => {
@@ -37,7 +18,7 @@ const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     return c.json({
       user: {
         id: userId,
-        email: c.get("userEmail"),
+        email: c.get("userEmail") ?? "",
         isPremium: c.get("isPremium") ?? false,
       },
     });
@@ -54,12 +35,12 @@ const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     await upsertUser(db, auth.userId, email);
 
     const user = await db.query.users.findFirst({
-      where: eq(users.id, auth.userId),
+      where: eq(users.clerkUserId, auth.userId),
     });
 
     return c.json({
       // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
-      user: user ? { id: user.id, email: user.email, isPremium: user.isPremium } : null,
+      user: user ? { id: user.id, email: user.email, isPremium: false } : null,
     });
   });
 

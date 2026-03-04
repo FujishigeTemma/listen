@@ -9,15 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SIdRouteImport } from './routes/s.$id'
 
-const SubscribeRoute = SubscribeRouteImport.update({
-  id: '/subscribe',
-  path: '/subscribe',
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -45,14 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
   '/settings': typeof SettingsRoute
-  '/subscribe': typeof SubscribeRoute
+  '/notifications': typeof NotificationsRoute
   '/s/$id': typeof SIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
   '/settings': typeof SettingsRoute
-  '/subscribe': typeof SubscribeRoute
+  '/notifications': typeof NotificationsRoute
   '/s/$id': typeof SIdRoute
 }
 export interface FileRoutesById {
@@ -60,32 +60,32 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/archive': typeof ArchiveRoute
   '/settings': typeof SettingsRoute
-  '/subscribe': typeof SubscribeRoute
+  '/notifications': typeof NotificationsRoute
   '/s/$id': typeof SIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archive' | '/settings' | '/subscribe' | '/s/$id'
+  fullPaths: '/' | '/archive' | '/settings' | '/notifications' | '/s/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archive' | '/settings' | '/subscribe' | '/s/$id'
-  id: '__root__' | '/' | '/archive' | '/settings' | '/subscribe' | '/s/$id'
+  to: '/' | '/archive' | '/settings' | '/notifications' | '/s/$id'
+  id: '__root__' | '/' | '/archive' | '/settings' | '/notifications' | '/s/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchiveRoute: typeof ArchiveRoute
   SettingsRoute: typeof SettingsRoute
-  SubscribeRoute: typeof SubscribeRoute
+  NotificationsRoute: typeof NotificationsRoute
   SIdRoute: typeof SIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/subscribe': {
-      id: '/subscribe'
-      path: '/subscribe'
-      fullPath: '/subscribe'
-      preLoaderRoute: typeof SubscribeRouteImport
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -123,7 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchiveRoute: ArchiveRoute,
   SettingsRoute: SettingsRoute,
-  SubscribeRoute: SubscribeRoute,
+  NotificationsRoute: NotificationsRoute,
   SIdRoute: SIdRoute,
 }
 export const routeTree = rootRouteImport

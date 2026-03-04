@@ -11,7 +11,7 @@ import {
   useTracks,
   useUpdateTrack,
 } from "../lib/queries";
-import { formatTimestamp } from "../lib/utils";
+import { formatTimestamp } from "@listen/shared";
 
 type Track = InferSelectModel<typeof tracks>;
 

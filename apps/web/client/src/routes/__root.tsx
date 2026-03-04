@@ -1,7 +1,7 @@
 import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
 import type { QueryClient } from "@tanstack/react-query";
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
-import { Radio, Archive, Mail, Settings, LogIn } from "lucide-react";
+import { Radio, Archive, Bell, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
 
 import { AuthProvider } from "../lib/clerk";
@@ -67,7 +67,7 @@ function Navigation() {
     <nav className="flex gap-4">
       <NavLink to="/" label="Live" icon={Radio} />
       <NavLink to="/archive" label="Archive" icon={Archive} />
-      <NavLink to="/subscribe" label="Subscribe" icon={Mail} />
+      <NavLink to="/notifications" label="Notify" icon={Bell} />
       <NavLink to="/settings" label="Settings" icon={Settings} />
     </nav>
   );

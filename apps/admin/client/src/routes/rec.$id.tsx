@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Play, Square, Clock, List } from "lucide-react";
 
 import { useSession, useHealth, useStartSession, useStopSession, useTracks } from "../lib/queries";
-import { formatDuration, formatDate, formatTimestamp } from "../lib/utils";
+import { formatTimestamp, formatDate } from "@listen/shared";
 
 export const Route = createFileRoute("/rec/$id")({
   component: RecordingPage,
@@ -63,7 +63,7 @@ function RecordingPage() {
               </div>
               <div className="flex items-center gap-2 text-zinc-400">
                 <Clock className="h-4 w-4" />
-                {health?.recordingDuration != undefined && formatDuration(health.recordingDuration)}
+                {health?.recordingDuration != undefined && formatTimestamp(health.recordingDuration)}
               </div>
               <button
                 onClick={() => stopSession.mutate(id)}
@@ -96,7 +96,7 @@ function RecordingPage() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-zinc-500">Duration</span>
-              <div className="font-medium">{formatDuration(session.durationSeconds)}</div>
+              <div className="font-medium">{formatTimestamp(session.durationSeconds)}</div>
             </div>
             {session.expiresAt && (
               <div>

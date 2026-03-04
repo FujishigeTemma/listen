@@ -83,6 +83,9 @@ importers:
       '@listen/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@listen/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.20(react@19.2.3)
@@ -177,6 +180,12 @@ importers:
       '@listen/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@listen/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@polar-sh/sdk':
+        specifier: ^0.46.1
+        version: 0.46.1
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.20(react@19.2.3)
@@ -214,6 +223,9 @@ importers:
       '@cloudflare/vite-plugin':
         specifier: ^1.25.5
         version: 1.25.5(vite@7.3.1(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))(workerd@1.20260302.0)(wrangler@4.68.1)
+      '@polar-sh/hono':
+        specifier: ^0.5.4
+        version: 0.5.4(hono@4.11.7)
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@7.3.1(@types/node@25.1.0)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -254,6 +266,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.8
         version: 0.31.8
+
+  packages/shared: {}
 
 packages:
 
@@ -542,6 +556,7 @@ packages:
   '@clerk/clerk-react@5.60.0':
     resolution: {integrity: sha512-P88FncsJpq/3WZJhhlj+md8mYb35BIXpr462C/figwsBGHsinr8VuBQUMcMZZ/6M34C8ABfLTPa6PHVp6+3D5Q==}
     engines: {node: '>=18.17.0'}
+    deprecated: 'This package is no longer supported. Please use @clerk/react instead. See the upgrade guide for more info: https://clerk.com/docs/guides/development/upgrading/upgrade-guides/core-3'
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -561,6 +576,7 @@ packages:
   '@clerk/types@4.101.14':
     resolution: {integrity: sha512-jl7DywmeaZx1IntgEXcjDZq2uyk+X/1yAZOjxOboeGTS0rNTiQNhv7xK8tFVjexsUAFrYlwC1AxhFuJiMDQjow==}
     engines: {node: '>=18.17.0'}
+    deprecated: 'This package is no longer supported. Please import types from @clerk/shared/types instead. See the upgrade guide for more info: https://clerk.com/docs/guides/development/upgrading/upgrade-guides/core-3'
 
   '@cloudflare/kv-asset-handler@0.4.2':
     resolution: {integrity: sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ==}
@@ -1542,6 +1558,18 @@ packages:
 
   '@petamoriken/float16@3.9.3':
     resolution: {integrity: sha512-8awtpHXCx/bNpFt4mt2xdkgtgVvKqty8VbjHI/WWWQuEw+KLzFot3f4+LkQY9YmOtq7A5GdOnqoIC8Pdygjk2g==}
+
+  '@polar-sh/adapter-utils@0.4.4':
+    resolution: {integrity: sha512-0fvscT82EMoo+otgnw7YsbzxmatxTpc457DytZY9Lr+6B9XNBI/wP7THK0nV3Qdaipd66Pp9hyZI9Dzusj1KzQ==}
+
+  '@polar-sh/hono@0.5.4':
+    resolution: {integrity: sha512-7rH9xBKyf76U5mL0CTWj6fxa7ZnCf7Hbha6g7Td4scT9JK4fs2jOG/fhKKh+XqUNiFowHJCalSjp0XbK7un5xw==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      hono: ^4.6.16
+
+  '@polar-sh/sdk@0.46.1':
+    resolution: {integrity: sha512-bFoEX2wxa5rWe2jTrJrf2Knelf/3zW1O2wGoqYoJfuRVvUgGSml1TB1v6NO+tDkT5d1bMfUFXBKxFYnuegG1iw==}
 
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
@@ -4606,6 +4634,21 @@ snapshots:
 
   '@petamoriken/float16@3.9.3':
     optional: true
+
+  '@polar-sh/adapter-utils@0.4.4':
+    dependencies:
+      '@polar-sh/sdk': 0.46.1
+
+  '@polar-sh/hono@0.5.4(hono@4.11.7)':
+    dependencies:
+      '@polar-sh/adapter-utils': 0.4.4
+      '@polar-sh/sdk': 0.46.1
+      hono: 4.11.7
+
+  '@polar-sh/sdk@0.46.1':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 3.25.76
 
   '@poppinss/colors@4.1.6':
     dependencies:

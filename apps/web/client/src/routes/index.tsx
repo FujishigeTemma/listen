@@ -1,11 +1,14 @@
+import { useAuth, SignInButton } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Radio, Calendar } from "lucide-react";
+import { Radio, Calendar, Lock, LogIn } from "lucide-react";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";
 import { useClient } from "../lib/client";
+import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
+import { trackQueries } from "../queries/tracks";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -16,32 +19,7 @@ function HomePage() {
   const { data: liveSession, isPending } = useQuery(sessionQueries.live(client));
 
   if (liveSession) {
-    return (
-      <div className="space-y-8">
-        {/* Live Banner */}
-        <div className="flex items-center gap-3 rounded-lg border border-red-800/50 bg-red-950/50 px-4 py-3">
-          <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-          <span className="font-medium text-red-400">LIVE NOW</span>
-          <span className="text-zinc-400">{liveSession.title ?? liveSession.id}</span>
-        </div>
-
-        {/* Player */}
-        <Player sessionId={liveSession.id} isLive />
-
-        {/* Track List */}
-        <div className="space-y-4">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Radio className="h-5 w-5" />
-            Now Playing
-          </h2>
-          {liveSession.tracks && liveSession.tracks.length > 0 ? (
-            <TrackList tracks={liveSession.tracks} />
-          ) : (
-            <div className="text-zinc-500">Tracklist will appear here</div>
-          )}
-        </div>
-      </div>
-    );
+    return <LiveView session={liveSession} />;
   }
 
   if (isPending) {
@@ -55,6 +33,78 @@ function HomePage() {
   return <OfflineState />;
 }
 
+function LiveView({ session }: { session: { id: string; title: string | null } }) {
+  const client = useClient();
+  const { data: trackData } = useQuery({
+    ...trackQueries.bySession(client, session.id),
+    refetchInterval: 30_000,
+  });
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center gap-3 rounded-lg border border-red-800/50 bg-red-950/50 px-4 py-3">
+        <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+        <span className="font-medium text-red-400">LIVE NOW</span>
+        <span className="text-zinc-400">{session.title ?? session.id}</span>
+      </div>
+
+      <Player sessionId={session.id} isLive />
+
+      <div className="space-y-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Radio className="h-5 w-5" />
+          Now Playing
+        </h2>
+        {trackData?.requiresPremium ? (
+          <TracklistLocked />
+        ) : trackData && trackData.tracks.length > 0 ? (
+          <TrackList tracks={trackData.tracks} />
+        ) : (
+          <div className="text-zinc-500">Tracklist will appear here</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TracklistLocked() {
+  const { isSignedIn } = useAuth();
+  const createCheckout = useCreateCheckout();
+
+  const handleUpgrade = () => {
+    createCheckout.mutate(undefined, {
+      onSuccess: (data) => {
+        window.location.href = data.checkoutUrl;
+      },
+    });
+  };
+
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-center">
+      <Lock className="mx-auto h-6 w-6 text-zinc-500" />
+      <p className="mt-2 text-sm text-zinc-500">
+        Tracklist is available for paid account holders.
+      </p>
+      {isSignedIn ? (
+        <button
+          onClick={handleUpgrade}
+          disabled={createCheckout.isPending}
+          className="mt-3 rounded-lg bg-yellow-600 px-4 py-1.5 text-sm font-medium text-black hover:bg-yellow-500 disabled:opacity-50"
+        >
+          {createCheckout.isPending ? "Loading..." : "Upgrade"}
+        </button>
+      ) : (
+        <SignInButton mode="modal">
+          <button className="mt-3 flex items-center gap-1.5 mx-auto rounded-lg border border-zinc-700 px-4 py-1.5 text-sm hover:bg-zinc-800">
+            <LogIn className="h-3.5 w-3.5" />
+            Sign in
+          </button>
+        </SignInButton>
+      )}
+    </div>
+  );
+}
+
 function OfflineState() {
   return (
     <div className="space-y-8">
@@ -64,10 +114,10 @@ function OfflineState() {
         </div>
         <h1 className="text-2xl font-bold">Currently Offline</h1>
         <p className="mt-2 text-zinc-500">No live stream at the moment.</p>
-        <p className="text-zinc-500">Check back later or subscribe to get notified.</p>
+        <p className="text-zinc-500">Check back later or enable notifications.</p>
         <div className="mt-6 flex justify-center gap-4">
           <Link
-            to="/subscribe"
+            to="/notifications"
             className="rounded-lg bg-green-600 px-6 py-2 font-medium hover:bg-green-700"
           >
             Get Notified
@@ -81,7 +131,6 @@ function OfflineState() {
         </div>
       </div>
 
-      {/* Upcoming section (placeholder) */}
       <div className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Calendar className="h-5 w-5" />
