@@ -8,6 +8,13 @@
       "when": 1769196419837,
       "tag": "0000_shallow_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1772870400000,
+      "tag": "0001_paid_accounts",
+      "breakpoints": true
     }
   ]
 }

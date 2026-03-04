@@ -10,30 +10,25 @@ const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     const db = createDB(c.env.DB);
     const liveSession = await db.query.sessions.findFirst({
       where: eq(sessions.state, "live"),
-      with: { tracks: true },
     });
 
-    return c.json({ session: liveSession });
+    // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
+    return c.json({ session: liveSession ?? null });
   })
   .get("/archive", async (c) => {
-    const db = createDB(c.env.DB);
-    const now = Math.floor(Date.now() / 1000);
+    const isPremium = c.get("isPremium") ?? false;
 
-    // Get ended sessions that haven't expired
+    if (!isPremium) {
+      return c.json({ sessions: [], requiresPremium: true });
+    }
+
+    const db = createDB(c.env.DB);
     const archivedSessions = await db.query.sessions.findMany({
       where: eq(sessions.state, "ended"),
       orderBy: desc(sessions.endedAt),
     });
 
-    // Filter out expired sessions for non-premium users
-    // TODO: Check premium status from context
-    const isPremium = c.get("isPremium") ?? false;
-    const filtered = archivedSessions.filter((s) => {
-      if (isPremium) return true;
-      return !s.expiresAt || s.expiresAt > now;
-    });
-
-    return c.json({ sessions: filtered });
+    return c.json({ sessions: archivedSessions, requiresPremium: false });
   })
   .get("/:id", async (c) => {
     const id = c.req.param("id");
@@ -41,18 +36,16 @@ const sessionsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, id),
-      with: { tracks: true },
     });
 
     if (!session) {
       return c.json({ error: "Session not found" }, 404);
     }
 
-    // Check if expired for non-premium users
+    // Archive sessions require premium access
     const isPremium = c.get("isPremium") ?? false;
-    const now = Math.floor(Date.now() / 1000);
-    if (!isPremium && session.expiresAt && session.expiresAt < now) {
-      return c.json({ error: "Session has expired" }, 403);
+    if (session.state === "ended" && !isPremium) {
+      return c.json({ error: "Premium required" }, 403);
     }
 
     return c.json({ session });

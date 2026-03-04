@@ -1,10 +1,10 @@
 import { useAuth, SignInButton } from "@clerk/clerk-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Settings, Crown, LogIn } from "lucide-react";
+import { Settings, Crown, LogIn, Bell, BellOff } from "lucide-react";
 
 import { useClient } from "../lib/client";
-import { billingQueries, useCreateCheckout } from "../queries/billing";
+import { billingQueries, useCreateCheckout, useCreatePortalSession } from "../queries/billing";
 import { meQueries } from "../queries/me";
 
 export const Route = createFileRoute("/settings")({
@@ -44,25 +44,24 @@ function SettingsPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Account</h2>
-        {user ? <AccountCard email={user.email} isPremium={user.isPremium} /> : <SignInPrompt />}
+        {user ? <AccountCard email={user.email} isPremium={billing?.isPremium ?? false} /> : <SignInPrompt />}
       </section>
+
+      {isSignedIn && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">Notifications</h2>
+          <NotificationCard />
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Premium</h2>
         <PremiumCard
           isPremium={billing?.isPremium ?? false}
+          subscription={billing?.subscription}
           onUpgrade={handleUpgrade}
           isLoading={createCheckout.isPending}
         />
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Playback</h2>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-          <div className="text-zinc-500">
-            Playback settings will be available in a future update.
-          </div>
-        </div>
       </section>
     </div>
   );
@@ -92,7 +91,7 @@ function SignInPrompt() {
       <LogIn className="mx-auto h-8 w-8 text-zinc-500" />
       <h3 className="mt-2 font-medium">Sign in to access more features</h3>
       <p className="mt-1 text-sm text-zinc-500">
-        Create an account to sync your preferences and upgrade to premium
+        Create an account to enable notifications and upgrade to premium
       </p>
       <SignInButton mode="modal">
         <button className="mt-4 rounded-lg border border-zinc-700 px-6 py-2 text-sm hover:bg-zinc-800">
@@ -103,15 +102,89 @@ function SignInPrompt() {
   );
 }
 
+function NotificationCard() {
+  const client = useClient();
+  const queryClient = useQueryClient();
+
+  const { data: status } = useQuery({
+    queryKey: ["notifications", "status"],
+    queryFn: async () => {
+      const res = await client.subscribe.$get();
+      if (!res.ok) throw new Error("Failed to fetch notification status");
+      return res.json();
+    },
+  });
+
+  const toggle = useMutation({
+    mutationFn: async (enable: boolean) => {
+      if (enable) {
+        const res = await client.subscribe.$post();
+        if (!res.ok) throw new Error("Failed to enable notifications");
+      } else {
+        const res = await client.subscribe.$delete();
+        if (!res.ok) throw new Error("Failed to disable notifications");
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications", "status"] });
+    },
+  });
+
+  const isEnabled = status?.enabled ?? false;
+
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {isEnabled ? (
+            <Bell className="h-5 w-5 text-green-500" />
+          ) : (
+            <BellOff className="h-5 w-5 text-zinc-500" />
+          )}
+          <div>
+            <div className="font-medium">Stream Notifications</div>
+            <div className="text-sm text-zinc-500">
+              Get notified when a stream starts or is scheduled
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => toggle.mutate(!isEnabled)}
+          disabled={toggle.isPending}
+          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+            isEnabled
+              ? "border border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+              : "bg-green-600 text-white hover:bg-green-700"
+          }`}
+        >
+          {toggle.isPending ? "..." : isEnabled ? "Disable" : "Enable"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PremiumCard({
   isPremium,
+  subscription,
   onUpgrade,
   isLoading,
 }: {
   isPremium: boolean;
+  subscription?: { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null } | null;
   onUpgrade: () => void;
   isLoading: boolean;
 }) {
+  const createPortal = useCreatePortalSession();
+
+  const handleManage = () => {
+    createPortal.mutate(undefined, {
+      onSuccess: (data) => {
+        window.location.href = data.portalUrl;
+      },
+    });
+  };
+
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
       <div className="flex items-start gap-4">
@@ -121,12 +194,26 @@ function PremiumCard({
         <div className="flex-1">
           <h3 className="font-semibold">{isPremium ? "Premium Active" : "Upgrade to Premium"}</h3>
           <ul className="mt-2 space-y-1 text-sm text-zinc-400">
-            <li>Unlimited archive access (no 48h expiration)</li>
-            <li>Download recordings for offline listening</li>
-            <li>No advertisements</li>
+            <li>Archive access for past sessions</li>
+            <li>Full tracklist access</li>
             <li>Support the stream</li>
           </ul>
-          {!isPremium && (
+          {isPremium ? (
+            <div className="mt-4 space-y-2">
+              {subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
+                <div className="text-sm text-yellow-500">
+                  Cancels at end of period ({new Date(subscription.currentPeriodEnd * 1000).toLocaleDateString()})
+                </div>
+              )}
+              <button
+                onClick={handleManage}
+                disabled={createPortal.isPending}
+                className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {createPortal.isPending ? "Loading..." : "Manage Subscription"}
+              </button>
+            </div>
+          ) : (
             <button
               onClick={onUpgrade}
               disabled={isLoading}

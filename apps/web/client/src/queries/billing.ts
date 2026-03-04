@@ -27,3 +27,14 @@ export function useCreateCheckout() {
     },
   });
 }
+
+export function useCreatePortalSession() {
+  const client = useClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await client.billing.portal.$post();
+      if (!res.ok) throw new Error("Failed to create portal session");
+      return res.json();
+    },
+  });
+}

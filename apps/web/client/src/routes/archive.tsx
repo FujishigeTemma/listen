@@ -1,9 +1,11 @@
+import { useAuth, SignInButton } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Archive, Clock, Calendar } from "lucide-react";
+import { Archive, Clock, Calendar, Crown, LogIn } from "lucide-react";
 
 import { useClient } from "../lib/client";
 import { formatDuration, formatDate } from "../lib/utils";
+import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
 
 export const Route = createFileRoute("/archive")({
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/archive")({
 
 function ArchivePage() {
   const client = useClient();
-  const { data: sessions, isPending } = useQuery(sessionQueries.archive(client));
+  const { data, isPending } = useQuery(sessionQueries.archive(client));
 
   return (
     <div className="space-y-8">
@@ -24,7 +26,52 @@ function ArchivePage() {
         <p className="mt-1 text-zinc-500">Past sessions available for replay</p>
       </div>
 
-      <SessionList sessions={sessions} isPending={isPending} />
+      {data?.requiresPremium ? (
+        <PremiumRequired />
+      ) : (
+        <SessionList sessions={data?.sessions} isPending={isPending} />
+      )}
+    </div>
+  );
+}
+
+function PremiumRequired() {
+  const { isSignedIn } = useAuth();
+  const createCheckout = useCreateCheckout();
+
+  const handleUpgrade = () => {
+    createCheckout.mutate(undefined, {
+      onSuccess: (data) => {
+        window.location.href = data.checkoutUrl;
+      },
+    });
+  };
+
+  return (
+    <div className="py-20 text-center">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/20">
+        <Crown className="h-8 w-8 text-yellow-500" />
+      </div>
+      <h2 className="text-lg font-semibold">Premium Feature</h2>
+      <p className="mt-1 text-zinc-500">
+        Archive access is available for paid account holders.
+      </p>
+      {isSignedIn ? (
+        <button
+          onClick={handleUpgrade}
+          disabled={createCheckout.isPending}
+          className="mt-6 rounded-lg bg-yellow-600 px-6 py-2 text-sm font-medium text-black hover:bg-yellow-500 disabled:opacity-50"
+        >
+          {createCheckout.isPending ? "Loading..." : "Upgrade to Premium"}
+        </button>
+      ) : (
+        <SignInButton mode="modal">
+          <button className="mt-6 flex items-center gap-2 mx-auto rounded-lg border border-zinc-700 px-6 py-2 text-sm hover:bg-zinc-800">
+            <LogIn className="h-4 w-4" />
+            Sign in to upgrade
+          </button>
+        </SignInButton>
+      )}
     </div>
   );
 }
@@ -75,10 +122,6 @@ function EmptyState() {
 }
 
 function SessionCard({ session }: { session: Session }) {
-  const isExpiring = session.expiresAt
-    ? session.expiresAt - Date.now() / 1000 < 24 * 60 * 60
-    : false;
-
   return (
     <Link
       to="/s/$id"
@@ -105,7 +148,6 @@ function SessionCard({ session }: { session: Session }) {
           )}
         </div>
       </div>
-      {isExpiring && <span className="text-xs text-yellow-500">Expiring soon</span>}
     </Link>
   );
 }

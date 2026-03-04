@@ -22,8 +22,7 @@ export const sessionQueries = {
       queryFn: async () => {
         const res = await client.sessions.archive.$get();
         if (!res.ok) throw new Error("Failed to fetch archive");
-        const data = await res.json();
-        return data.sessions;
+        return res.json();
       },
     }),
 
