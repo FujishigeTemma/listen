@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Radio, Calendar, Archive } from "lucide-react";
 
 import { useHealth, useSessions, useCreateSession } from "../lib/queries";
-import { formatDuration, formatDate } from "../lib/utils";
+import { formatTimestamp, formatDate } from "@listen/shared";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -27,7 +27,7 @@ function Dashboard() {
           <span className="font-medium">Recording in progress</span>
           <span className="text-zinc-400">
             Session: {health.currentSessionId} |{" "}
-            {health.recordingDuration != undefined && formatDuration(health.recordingDuration)}
+            {health.recordingDuration != undefined && formatTimestamp(health.recordingDuration)}
           </span>
           <Link
             to="/rec/$id"
@@ -130,7 +130,7 @@ function formatSessionInfo(session: Session): string {
     return `Started: ${formatDate(session.startedAt)}`;
   }
   if (session.state === "ended" && session.durationSeconds) {
-    return `Duration: ${formatDuration(session.durationSeconds)}`;
+    return `Duration: ${formatTimestamp(session.durationSeconds)}`;
   }
   return session.id;
 }

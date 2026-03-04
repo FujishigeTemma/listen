@@ -4,7 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Archive, Clock, Calendar, Crown, LogIn } from "lucide-react";
 
 import { useClient } from "../lib/client";
-import { formatDuration, formatDate } from "../lib/utils";
+import { formatTimestamp, formatDate } from "@listen/shared";
 import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
 
@@ -143,7 +143,7 @@ function SessionCard({ session }: { session: Session }) {
           {session.durationSeconds && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatDuration(session.durationSeconds)}
+              {formatTimestamp(session.durationSeconds)}
             </span>
           )}
         </div>

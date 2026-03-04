@@ -18,6 +18,7 @@
     "@hono/node-server": "^1.19.9",
     "@hono/valibot-validator": "catalog:",
     "@listen/db": "workspace:*",
+    "@listen/shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "chokidar": "^5.0.0",

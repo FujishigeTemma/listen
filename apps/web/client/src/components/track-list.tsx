@@ -1,6 +1,6 @@
 import type { Track } from "../queries/tracks";
 
-import { formatTimestamp } from "../lib/utils";
+import { formatTimestamp } from "@listen/shared";
 
 const NOT_FOUND = -1;
 const FIRST_INDEX = 0;

@@ -6,7 +6,7 @@ import { ArrowLeft, Clock, Calendar, Crown, Lock, LogIn } from "lucide-react";
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";
 import { useClient } from "../lib/client";
-import { formatDuration, formatDate } from "../lib/utils";
+import { formatTimestamp, formatDate } from "@listen/shared";
 import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
 import type { Track } from "../queries/tracks";
@@ -236,7 +236,7 @@ function SessionMeta({
       {durationSeconds && (
         <span className="flex items-center gap-1">
           <Clock className="h-4 w-4" />
-          {formatDuration(durationSeconds)}
+          {formatTimestamp(durationSeconds)}
         </span>
       )}
     </div>
