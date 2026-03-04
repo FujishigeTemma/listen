@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
+    "@polar-sh/hono": "^0.5.4",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/devtools-vite": "^0.4.1",
     "@tanstack/router-plugin": "^1.157.16",

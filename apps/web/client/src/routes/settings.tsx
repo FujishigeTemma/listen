@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Settings, Crown, LogIn, Bell, BellOff } from "lucide-react";
 
 import { useClient } from "../lib/client";
-import { billingQueries, useCreateCheckout, useCreatePortalSession } from "../queries/billing";
+import { billingQueries, useCreateCheckout } from "../queries/billing";
 import { meQueries } from "../queries/me";
 
 export const Route = createFileRoute("/settings")({
@@ -175,14 +175,8 @@ function PremiumCard({
   onUpgrade: () => void;
   isLoading: boolean;
 }) {
-  const createPortal = useCreatePortalSession();
-
   const handleManage = () => {
-    createPortal.mutate(undefined, {
-      onSuccess: (data) => {
-        window.location.href = data.portalUrl;
-      },
-    });
+    window.location.href = "/billing/portal";
   };
 
   return (
@@ -207,10 +201,9 @@ function PremiumCard({
               )}
               <button
                 onClick={handleManage}
-                disabled={createPortal.isPending}
-                className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 hover:bg-zinc-800 disabled:opacity-50"
+                className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 hover:bg-zinc-800"
               >
-                {createPortal.isPending ? "Loading..." : "Manage Subscription"}
+                Manage Subscription
               </button>
             </div>
           ) : (

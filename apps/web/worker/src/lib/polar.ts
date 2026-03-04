@@ -1,30 +1,14 @@
 import type { DB } from "./db";
 import { users, subscriptions } from "@listen/db";
-import { Polar } from "@polar-sh/sdk";
-import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
+import type { Subscription as PolarSubscription } from "@polar-sh/sdk/models/components/subscription";
 import { eq } from "drizzle-orm";
 
-export { WebhookVerificationError };
-
-export function createPolar(env: Env): Polar {
-  return new Polar({
-    accessToken: env.POLAR_ACCESS_TOKEN ?? "",
-  });
+function toUnixTimestamp(date: Date | null | undefined): number | null {
+  if (!date) return null;
+  return Math.floor(date.getTime() / 1000);
 }
 
-async function findOrCreateUserByEmail(db: DB, email: string): Promise<number> {
-  const existing = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
-  if (existing) return existing.id;
-
-  const now = Math.floor(Date.now() / 1000);
-  const [inserted] = await db
-    .insert(users)
-    .values({ email, createdAt: now, updatedAt: now })
-    .returning({ id: users.id });
-  return inserted.id;
-}
+export type SubscriptionStatus = "active" | "canceled" | "past_due" | "unpaid" | "incomplete" | "trialing" | "revoked";
 
 async function upsertSubscription(
   db: DB,
@@ -32,10 +16,10 @@ async function upsertSubscription(
   data: {
     polarSubscriptionId: string;
     polarProductId: string;
-    status: string;
-    currentPeriodStart?: number | null;
-    currentPeriodEnd?: number | null;
-    cancelAtPeriodEnd?: boolean;
+    status: SubscriptionStatus;
+    currentPeriodStart: number | null;
+    currentPeriodEnd: number | null;
+    cancelAtPeriodEnd: boolean;
   },
 ) {
   const now = Math.floor(Date.now() / 1000);
@@ -50,81 +34,60 @@ async function upsertSubscription(
         status: data.status,
         currentPeriodStart: data.currentPeriodStart ?? existing.currentPeriodStart,
         currentPeriodEnd: data.currentPeriodEnd ?? existing.currentPeriodEnd,
-        cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? existing.cancelAtPeriodEnd,
+        cancelAtPeriodEnd: data.cancelAtPeriodEnd,
         updatedAt: now,
       })
       .where(eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId));
   } else {
-    await db.insert(subscriptions).values({
+    await db.insert(subscriptions).values([{
       userId,
       polarSubscriptionId: data.polarSubscriptionId,
       polarProductId: data.polarProductId,
       status: data.status,
-      currentPeriodStart: data.currentPeriodStart ?? null,
-      currentPeriodEnd: data.currentPeriodEnd ?? null,
-      cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
+      currentPeriodStart: data.currentPeriodStart,
+      currentPeriodEnd: data.currentPeriodEnd,
+      cancelAtPeriodEnd: data.cancelAtPeriodEnd,
       createdAt: now,
       updatedAt: now,
-    });
+    }]);
   }
 }
 
-function toUnixTimestamp(dateString: string | undefined | null): number | null {
-  if (!dateString) return null;
-  const d = new Date(dateString);
-  return Number.isNaN(d.getTime()) ? null : Math.floor(d.getTime() / 1000);
-}
-
-export async function handleWebhookEvent(
-  body: string,
-  headers: Record<string, string>,
-  webhookSecret: string,
+/**
+ * Process a subscription webhook event.
+ * Requires that the user already exists with a clerk_user_id.
+ * The user is looked up by email (which was set during Clerk sync).
+ */
+export async function handleSubscriptionEvent(
   db: DB,
+  sub: PolarSubscription,
+  status: SubscriptionStatus,
 ) {
-  const event = validateEvent(body, headers, webhookSecret);
+  const email = sub.customer.email;
+  const polarCustomerId = sub.customer.id;
 
-  const type = event.type as string;
+  // User must already exist (created via Clerk login + /me/sync).
+  // We do NOT create users from webhooks — Clerk login is required first.
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
 
-  if (
-    type === "subscription.created" ||
-    type === "subscription.updated" ||
-    type === "subscription.active" ||
-    type === "subscription.canceled" ||
-    type === "subscription.revoked" ||
-    type === "subscription.uncanceled"
-  ) {
-    const sub = event.data as Record<string, unknown>;
-    const customer = sub.customer as Record<string, unknown> | undefined;
-    const email = (customer?.email as string) ?? "";
-    const polarCustomerId = customer?.id as string | undefined;
+  if (!user?.clerkUserId) return;
 
-    if (!email) return;
-
-    const userId = await findOrCreateUserByEmail(db, email);
-
-    if (polarCustomerId) {
-      await db
-        .update(users)
-        .set({ polarCustomerId, updatedAt: Math.floor(Date.now() / 1000) })
-        .where(eq(users.id, userId));
-    }
-
-    const statusMap: Record<string, string> = {
-      "subscription.created": "active",
-      "subscription.active": "active",
-      "subscription.updated": sub.status as string,
-      "subscription.canceled": "canceled",
-      "subscription.revoked": "revoked",
-      "subscription.uncanceled": "active",
-    };
-
-    await upsertSubscription(db, userId, {
-      polarSubscriptionId: sub.id as string,
-      polarProductId: sub.productId as string,
-      status: statusMap[type] ?? (sub.status as string),
-      currentPeriodStart: toUnixTimestamp(sub.currentPeriodStart as string),
-      currentPeriodEnd: toUnixTimestamp(sub.currentPeriodEnd as string),
-      cancelAtPeriodEnd: (sub.cancelAtPeriodEnd as boolean) ?? false,
-    });
+  // Link polarCustomerId if not already set
+  if (!user.polarCustomerId) {
+    await db
+      .update(users)
+      .set({ polarCustomerId, updatedAt: Math.floor(Date.now() / 1000) })
+      .where(eq(users.id, user.id));
   }
+
+  await upsertSubscription(db, user.id, {
+    polarSubscriptionId: sub.id,
+    polarProductId: sub.productId,
+    status,
+    currentPeriodStart: toUnixTimestamp(sub.currentPeriodStart),
+    currentPeriodEnd: toUnixTimestamp(sub.currentPeriodEnd),
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+  });
 }
