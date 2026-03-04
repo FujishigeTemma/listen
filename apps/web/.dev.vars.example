@@ -1,0 +1,11 @@
+# Clerk (required for authentication)
+CLERK_SECRET_KEY=sk_test_xxx
+CLERK_PUBLISHABLE_KEY=pk_test_xxx
+
+# Clerk Webhook (required for user sync)
+CLERK_WEBHOOK_SIGNING_SECRET=whsec_xxx
+
+# Polar (required for billing features)
+POLAR_ACCESS_TOKEN=polar_xxx
+POLAR_WEBHOOK_SECRET=whsec_xxx
+POLAR_PRODUCT_ID=prod_xxx

@@ -4,6 +4,10 @@ import type { ReactNode } from "react";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+if (!PUBLISHABLE_KEY) {
+  throw new Error("VITE_CLERK_PUBLISHABLE_KEY is not set. Add it to your .env file.");
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
