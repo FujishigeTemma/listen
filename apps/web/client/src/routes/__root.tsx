@@ -67,7 +67,7 @@ function Navigation() {
     <nav className="flex gap-4">
       <NavLink to="/" label="Live" icon={Radio} />
       <NavLink to="/archive" label="Archive" icon={Archive} />
-      <NavLink to="/subscribe" label="Notify" icon={Bell} />
+      <NavLink to="/notifications" label="Notify" icon={Bell} />
       <NavLink to="/settings" label="Settings" icon={Settings} />
     </nav>
   );

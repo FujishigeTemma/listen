@@ -9,14 +9,14 @@ import { createPolar, handleWebhookEvent } from "../lib/polar";
 const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   .get("/status", async (c) => {
     const isPremium = c.get("isPremium") ?? false;
-    const dbUserId = c.get("dbUserId");
+    const userId = c.get("userId");
 
     let subscription: { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null } | undefined;
-    if (dbUserId) {
+    if (userId) {
       const db = createDB(c.env.DB);
       const sub = await db.query.subscriptions.findFirst({
         where: and(
-          eq(subscriptions.userId, dbUserId),
+          eq(subscriptions.userId, userId),
           eq(subscriptions.status, "active"),
         ),
       });
@@ -49,7 +49,7 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
     const db = createDB(c.env.DB);
     const user = await db.query.users.findFirst({
-      where: eq(users.clerkUserId, userId),
+      where: eq(users.id, userId),
     });
     if (!user) return c.json({ error: "User not found" }, 404);
 
@@ -87,7 +87,7 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
     const db = createDB(c.env.DB);
     const user = await db.query.users.findFirst({
-      where: eq(users.clerkUserId, userId),
+      where: eq(users.id, userId),
     });
     if (!user?.polarCustomerId) return c.json({ error: "No subscription found" }, 404);
 

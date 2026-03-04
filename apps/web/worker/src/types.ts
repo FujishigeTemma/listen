@@ -1,8 +1,7 @@
 export interface Variables {
-  userId?: string;
+  userId?: number;
   userEmail?: string;
   isPremium?: boolean;
-  dbUserId?: number;
 }
 
 /** Secrets set via `wrangler secret put`. */

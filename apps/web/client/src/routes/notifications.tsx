@@ -5,11 +5,11 @@ import { Bell, BellOff, Check, LogIn } from "lucide-react";
 
 import { useClient } from "../lib/client";
 
-export const Route = createFileRoute("/subscribe")({
-  component: SubscribePage,
+export const Route = createFileRoute("/notifications")({
+  component: NotificationsPage,
 });
 
-function SubscribePage() {
+function NotificationsPage() {
   const { isSignedIn } = useAuth();
 
   return (
@@ -56,7 +56,7 @@ function NotificationToggle() {
   const { data: status } = useQuery({
     queryKey: ["notifications", "status"],
     queryFn: async () => {
-      const res = await client.subscribe.$get();
+      const res = await client.notifications.$get();
       if (!res.ok) throw new Error("Failed to fetch notification status");
       return res.json();
     },
@@ -65,10 +65,10 @@ function NotificationToggle() {
   const toggle = useMutation({
     mutationFn: async (enable: boolean) => {
       if (enable) {
-        const res = await client.subscribe.$post();
+        const res = await client.notifications.$post();
         if (!res.ok) throw new Error("Failed to enable notifications");
       } else {
-        const res = await client.subscribe.$delete();
+        const res = await client.notifications.$delete();
         if (!res.ok) throw new Error("Failed to disable notifications");
       }
     },

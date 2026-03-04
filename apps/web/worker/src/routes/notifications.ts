@@ -5,29 +5,29 @@ import { Hono } from "hono";
 
 import { createDB } from "../lib/db";
 
-const subscribeRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
+const notificationRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   .get("/", async (c) => {
-    const dbUserId = c.get("dbUserId");
-    if (!dbUserId) {
+    const userId = c.get("userId");
+    if (!userId) {
       return c.json({ enabled: false, authenticated: false });
     }
 
     const db = createDB(c.env.DB);
     const notification = await db.query.notifications.findFirst({
-      where: eq(notifications.userId, dbUserId),
+      where: eq(notifications.userId, userId),
     });
 
     return c.json({ enabled: Boolean(notification), authenticated: true });
   })
   .post("/", async (c) => {
-    const dbUserId = c.get("dbUserId");
-    if (!dbUserId) return c.json({ error: "Unauthorized" }, 401);
+    const userId = c.get("userId");
+    if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
     const db = createDB(c.env.DB);
     const now = Math.floor(Date.now() / 1000);
 
     const existing = await db.query.notifications.findFirst({
-      where: eq(notifications.userId, dbUserId),
+      where: eq(notifications.userId, userId),
     });
 
     if (existing) {
@@ -35,7 +35,7 @@ const subscribeRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     }
 
     await db.insert(notifications).values({
-      userId: dbUserId,
+      userId,
       createdAt: now,
       updatedAt: now,
     });
@@ -43,13 +43,13 @@ const subscribeRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     return c.json({ message: "Notifications enabled" }, 201);
   })
   .delete("/", async (c) => {
-    const dbUserId = c.get("dbUserId");
-    if (!dbUserId) return c.json({ error: "Unauthorized" }, 401);
+    const userId = c.get("userId");
+    if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
     const db = createDB(c.env.DB);
-    await db.delete(notifications).where(eq(notifications.userId, dbUserId));
+    await db.delete(notifications).where(eq(notifications.userId, userId));
 
     return c.json({ message: "Notifications disabled" });
   });
 
-export { subscribeRoutes };
+export { notificationRoutes };

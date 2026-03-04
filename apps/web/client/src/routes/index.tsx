@@ -117,7 +117,7 @@ function OfflineState() {
         <p className="text-zinc-500">Check back later or enable notifications.</p>
         <div className="mt-6 flex justify-center gap-4">
           <Link
-            to="/subscribe"
+            to="/notifications"
             className="rounded-lg bg-green-600 px-6 py-2 font-medium hover:bg-green-700"
           >
             Get Notified

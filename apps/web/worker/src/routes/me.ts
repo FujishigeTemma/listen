@@ -56,7 +56,7 @@ const meRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     return c.json({
       user: {
         id: userId,
-        email: c.get("userEmail"),
+        email: c.get("userEmail") ?? "",
         isPremium: c.get("isPremium") ?? false,
       },
     });

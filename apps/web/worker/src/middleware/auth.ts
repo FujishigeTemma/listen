@@ -14,16 +14,14 @@ export const userMiddleware = createMiddleware<{
   const clerkUserId = getAuth(c)?.userId;
   if (!clerkUserId) return next();
 
-  c.set("userId", clerkUserId);
-
   const db = createDB(c.env.DB);
   const user = await db.query.users.findFirst({
     where: eq(users.clerkUserId, clerkUserId),
   });
 
   if (user) {
+    c.set("userId", user.id);
     c.set("userEmail", user.email);
-    c.set("dbUserId", user.id);
 
     const activeSubscription = await db.query.subscriptions.findFirst({
       where: and(
