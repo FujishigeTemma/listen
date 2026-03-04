@@ -1,5 +1,6 @@
 import type { Variables } from "../types";
 import { notifications } from "@listen/db";
+import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 
@@ -24,7 +25,7 @@ const notificationRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
     const db = createDB(c.env.DB);
-    const now = Math.floor(Date.now() / 1000);
+    const now = dayjs().unix();
 
     const existing = await db.query.notifications.findFirst({
       where: eq(notifications.userId, userId),

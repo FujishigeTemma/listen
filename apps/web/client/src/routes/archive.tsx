@@ -4,7 +4,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Archive, Clock, Calendar, Crown, LogIn } from "lucide-react";
 
 import { useClient } from "../lib/client";
-import { formatTimestamp, formatDate } from "@listen/shared";
+import dayjs from "dayjs";
+import { formatTimestamp } from "@listen/shared";
 import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
 
@@ -137,7 +138,7 @@ function SessionCard({ session }: { session: Session }) {
           {session.startedAt && (
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {formatDate(session.startedAt)}
+              {dayjs.unix(session.startedAt).format("YYYY/MM/DD HH:mm")}
             </span>
           )}
           {session.durationSeconds && (

@@ -1,8 +1,10 @@
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
-import { execa } from "execa";
 import type { ResultPromise } from "execa";
+import { execa } from "execa";
+
+import dayjs from "dayjs";
 
 import { env } from "../lib/env";
 
@@ -107,7 +109,7 @@ async function ensureOutputDirs(sessionId: string): Promise<void> {
   await mkdir(vodDir, { recursive: true });
 }
 
-function spawnFfmpeg(sessionId: string): ResultPromise {
+function spawnFFmpeg(sessionId: string): ResultPromise {
   const args = buildFfmpegArgs(sessionId);
   console.log(`[ffmpeg] starting: ffmpeg ${args.join(" ")}`);
   return execa("ffmpeg", args, { reject: false });
@@ -120,9 +122,9 @@ export async function startRecording(sessionId: string): Promise<void> {
 
   await ensureOutputDirs(sessionId);
 
-  ffmpegProcess = spawnFfmpeg(sessionId);
+  ffmpegProcess = spawnFFmpeg(sessionId);
   currentSessionId = sessionId;
-  startTime = Date.now();
+  startTime = dayjs().valueOf();
 
   pipeProcessLogs(ffmpegProcess);
   handleProcessExit(ffmpegProcess);
@@ -135,7 +137,7 @@ export async function stopRecording(): Promise<{ durationSeconds: number } | und
     return undefined;
   }
 
-  const duration = Math.floor((Date.now() - startTime) / 1000);
+  const duration = Math.floor((dayjs().valueOf() - startTime) / 1000);
   const sessionId = currentSessionId;
 
   // Send SIGINT to gracefully stop ffmpeg
@@ -159,7 +161,7 @@ export function getCurrentSessionId(): string | undefined {
 
 export function getRecordingDuration(): number | undefined {
   if (!startTime) return undefined;
-  return Math.floor((Date.now() - startTime) / 1000);
+  return Math.floor((dayjs().valueOf() - startTime) / 1000);
 }
 
 export async function cleanupSession(sessionId: string): Promise<void> {

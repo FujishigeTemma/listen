@@ -1,28 +1,40 @@
 import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
-import { users, subscriptions } from "@listen/db";
+import { subscriptions, users } from "@listen/db";
 import { CustomerPortal, Webhooks } from "@polar-sh/hono";
 import { Polar } from "@polar-sh/sdk";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
+import type { DB } from "../lib/db";
 import { createDB } from "../lib/db";
-import { handleSubscriptionEvent, type SubscriptionStatus } from "../lib/polar";
+import { handleSubscriptionEvent, isSubscriptionStatus } from "../lib/polar";
 import { upsertUser } from "../lib/user";
+
+async function resolveUser(
+  db: DB,
+  opts: { userId?: number; authUserId: string; getClerkEmail: () => Promise<string | undefined> },
+) {
+  if (opts.userId) {
+    return db.query.users.findFirst({ where: eq(users.id, opts.userId) });
+  }
+  const email = await opts.getClerkEmail();
+  await upsertUser(db, opts.authUserId, email);
+  return db.query.users.findFirst({ where: eq(users.clerkUserId, opts.authUserId) });
+}
 
 const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
   .get("/status", async (c) => {
     const isPremium = c.get("isPremium") ?? false;
     const userId = c.get("userId");
 
-    let subscription: { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null } | undefined;
+    let subscription:
+      | { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null }
+      | undefined = undefined;
     if (userId) {
       const db = createDB(c.env.DB);
       const sub = await db.query.subscriptions.findFirst({
-        where: and(
-          eq(subscriptions.userId, userId),
-          eq(subscriptions.status, "active"),
-        ),
+        where: and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active")),
       });
       if (sub) {
         subscription = {
@@ -45,7 +57,6 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     });
   })
   .post("/checkout", async (c) => {
-    // Require Clerk authentication before billing
     const auth = getAuth(c);
     if (!auth?.userId) return c.json({ error: "Unauthorized" }, 401);
 
@@ -53,23 +64,13 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     if (!productId) return c.json({ error: "Billing not configured" }, 500);
 
     const db = createDB(c.env.DB);
-
-    // Auto-create local user from Clerk if not yet synced
-    let userId = c.get("userId");
-    if (!userId) {
-      const clerk = c.get("clerk");
-      const clerkUser = await clerk.users.getUser(auth.userId);
-      const email = clerkUser.emailAddresses[0]?.emailAddress;
-      await upsertUser(db, auth.userId, email);
-      const created = await db.query.users.findFirst({
-        where: eq(users.clerkUserId, auth.userId),
-      });
-      if (!created) return c.json({ error: "Failed to create user" }, 500);
-      userId = created.id;
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+    const user = await resolveUser(db, {
+      userId: c.get("userId"),
+      authUserId: auth.userId,
+      getClerkEmail: async () => {
+        const clerkUser = await c.get("clerk").users.getUser(auth.userId);
+        return clerkUser.emailAddresses[0]?.emailAddress;
+      },
     });
     if (!user) return c.json({ error: "User not found" }, 404);
 
@@ -87,6 +88,7 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     const userId = c.get("userId");
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
+    // oxlint-disable-next-line new-cap
     return CustomerPortal({
       accessToken: c.env.POLAR_ACCESS_TOKEN,
       getCustomerId: async () => {
@@ -104,6 +106,7 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
     const db = createDB(c.env.DB);
 
+    // oxlint-disable-next-line new-cap
     return Webhooks({
       webhookSecret,
       onSubscriptionCreated: async (payload) => {
@@ -113,7 +116,8 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
         await handleSubscriptionEvent(db, payload.data, "active");
       },
       onSubscriptionUpdated: async (payload) => {
-        await handleSubscriptionEvent(db, payload.data, payload.data.status as SubscriptionStatus);
+        const status = isSubscriptionStatus(payload.data.status) ? payload.data.status : "active";
+        await handleSubscriptionEvent(db, payload.data, status);
       },
       onSubscriptionCanceled: async (payload) => {
         await handleSubscriptionEvent(db, payload.data, "canceled");

@@ -1,14 +1,23 @@
 import type { DB } from "./db";
 import { users, subscriptions } from "@listen/db";
+import dayjs from "dayjs";
 import type { Subscription as PolarSubscription } from "@polar-sh/sdk/models/components/subscription";
 import { eq } from "drizzle-orm";
 
+// oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
 function toUnixTimestamp(date: Date | null | undefined): number | null {
+  // oxlint-disable-next-line unicorn/no-null
   if (!date) return null;
-  return Math.floor(date.getTime() / 1000);
+  return dayjs(date).unix();
 }
 
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "unpaid" | "incomplete" | "trialing" | "revoked";
+
+const validStatuses: readonly string[] = ["active", "canceled", "past_due", "unpaid", "incomplete", "trialing", "revoked"];
+
+export function isSubscriptionStatus(status: string): status is SubscriptionStatus {
+  return validStatuses.includes(status);
+}
 
 async function upsertSubscription(
   db: DB,
@@ -22,7 +31,7 @@ async function upsertSubscription(
     cancelAtPeriodEnd: boolean;
   },
 ) {
-  const now = Math.floor(Date.now() / 1000);
+  const now = dayjs().unix();
   const existing = await db.query.subscriptions.findFirst({
     where: eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId),
   });
@@ -63,7 +72,7 @@ export async function handleSubscriptionEvent(
   sub: PolarSubscription,
   status: SubscriptionStatus,
 ) {
-  const email = sub.customer.email;
+  const {email} = sub.customer;
   const polarCustomerId = sub.customer.id;
 
   // User must already exist (created via Clerk login + /me/sync).
@@ -78,7 +87,7 @@ export async function handleSubscriptionEvent(
   if (!user.polarCustomerId) {
     await db
       .update(users)
-      .set({ polarCustomerId, updatedAt: Math.floor(Date.now() / 1000) })
+      .set({ polarCustomerId, updatedAt: dayjs().unix() })
       .where(eq(users.id, user.id));
   }
 

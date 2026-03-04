@@ -21,7 +21,7 @@ const updateTrackSchema = v.object({
   label: v.optional(v.nullable(v.string())),
 });
 
-const tracksRoutes = new Hono<{ Variables: AppVariables }>()
+const routes = new Hono<{ Variables: AppVariables }>()
   .get("/:sessionId", async (c) => {
     const db = c.get("db");
     const sessionId = c.req.param("sessionId");
@@ -98,4 +98,4 @@ const tracksRoutes = new Hono<{ Variables: AppVariables }>()
     return c.json({ success: true });
   });
 
-export { tracksRoutes as tracks };
+export { routes as tracks };

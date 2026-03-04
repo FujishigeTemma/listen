@@ -1,15 +1,16 @@
+import dayjs from "dayjs";
 import { Hono } from "hono";
 
 import { getCurrentSessionId, getRecordingDuration, isRecording } from "../services/ffmpeg";
 
-const health = new Hono().get("/", (c) =>
+const route = new Hono().get("/", (c) =>
   c.json({
     status: "ok",
     recording: isRecording(),
     currentSessionId: getCurrentSessionId(),
     recordingDuration: getRecordingDuration(),
-    timestamp: Date.now(),
+    timestamp: dayjs().valueOf(),
   }),
 );
 
-export { health };
+export { route as health };

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Plus, Radio, Calendar, Archive } from "lucide-react";
 
 import { useHealth, useSessions, useCreateSession } from "../lib/queries";
-import { formatTimestamp, formatDate } from "@listen/shared";
+import { formatTimestamp } from "@listen/shared";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -14,7 +15,7 @@ function Dashboard() {
   const createSession = useCreateSession();
 
   const handleCreateSession = () => {
-    const [today] = new Date().toISOString().split("T");
+    const today = dayjs().format("YYYY-MM-DD");
     createSession.mutate({ id: today });
   };
 
@@ -124,10 +125,10 @@ function SessionCard({ session }: { session: Session }) {
 
 function formatSessionInfo(session: Session): string {
   if (session.state === "scheduled" && session.scheduledAt) {
-    return `Scheduled: ${formatDate(session.scheduledAt)}`;
+    return `Scheduled: ${dayjs.unix(session.scheduledAt).format("YYYY/MM/DD HH:mm")}`;
   }
   if (session.state === "live" && session.startedAt) {
-    return `Started: ${formatDate(session.startedAt)}`;
+    return `Started: ${dayjs.unix(session.startedAt).format("YYYY/MM/DD HH:mm")}`;
   }
   if (session.state === "ended" && session.durationSeconds) {
     return `Duration: ${formatTimestamp(session.durationSeconds)}`;

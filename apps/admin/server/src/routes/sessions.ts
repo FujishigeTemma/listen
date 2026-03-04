@@ -4,6 +4,7 @@ import type { AppVariables } from "../index";
 import type { DB } from "../services/db";
 import { vValidator } from "@hono/valibot-validator";
 import { sessions } from "@listen/db";
+import dayjs from "dayjs";
 import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import * as v from "valibot";
@@ -45,15 +46,11 @@ async function endLiveSession() {
   return result;
 }
 
-function nowSeconds() {
-  return Math.floor(Date.now() / 1000);
-}
-
-const sessionsRoutes = new Hono<{ Variables: AppVariables }>()
+const routes = new Hono<{ Variables: AppVariables }>()
   .post("/", vValidator("json", createSessionSchema), async (c) => {
     const db = c.get("db");
     const body = c.req.valid("json");
-    const id = body.id ?? new Date().toISOString().split("T")[0];
+    const id = body.id ?? dayjs().format("YYYY-MM-DD");
 
     const existing = await findSession(db, id);
     if (existing) {
@@ -73,10 +70,10 @@ const sessionsRoutes = new Hono<{ Variables: AppVariables }>()
   })
   .get("/", async (c) => {
     const db = c.get("db");
-    const sessionsList = await db.query.sessions.findMany({
+    const sessionList = await db.query.sessions.findMany({
       orderBy: desc(sessions.id),
     });
-    return c.json(sessionsList);
+    return c.json(sessionList);
   })
   .get("/:id", async (c) => {
     const db = c.get("db");
@@ -103,7 +100,7 @@ const sessionsRoutes = new Hono<{ Variables: AppVariables }>()
 
     const [updated] = await db
       .update(sessions)
-      .set({ state: "live", startedAt: nowSeconds() })
+      .set({ state: "live", startedAt: dayjs().unix() })
       .where(eq(sessions.id, id))
       .returning();
 
@@ -121,7 +118,7 @@ const sessionsRoutes = new Hono<{ Variables: AppVariables }>()
     if (!session) return c.json({ error: "Session not found" }, 404);
 
     const result = await endLiveSession();
-    const now = nowSeconds();
+    const now = dayjs().unix();
 
     const [updated] = await db
       .update(sessions)
@@ -159,4 +156,4 @@ const sessionsRoutes = new Hono<{ Variables: AppVariables }>()
     return c.json(updated);
   });
 
-export { sessionsRoutes as sessions };
+export { routes as sessions };

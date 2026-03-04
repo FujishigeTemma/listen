@@ -1,1 +1,1 @@
-export { formatTimestamp, formatDate } from "./format.ts";
+export { formatTimestamp } from "./format.ts";

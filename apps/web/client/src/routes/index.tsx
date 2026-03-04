@@ -8,6 +8,7 @@ import { TrackList } from "../components/track-list";
 import { useClient } from "../lib/client";
 import { useCreateCheckout } from "../queries/billing";
 import { sessionQueries } from "../queries/sessions";
+import type { Track } from "../queries/tracks";
 import { trackQueries } from "../queries/tracks";
 
 export const Route = createFileRoute("/")({
@@ -55,16 +56,20 @@ function LiveView({ session }: { session: { id: string; title: string | null } }
           <Radio className="h-5 w-5" />
           Now Playing
         </h2>
-        {trackData?.requiresPremium ? (
-          <TracklistLocked />
-        ) : trackData && trackData.tracks.length > 0 ? (
-          <TrackList tracks={trackData.tracks} />
-        ) : (
-          <div className="text-zinc-500">Tracklist will appear here</div>
-        )}
+        <LiveTrackContent trackData={trackData} />
       </div>
     </div>
   );
+}
+
+function LiveTrackContent({
+  trackData,
+}: {
+  trackData: { tracks: Track[]; requiresPremium: boolean } | undefined;
+}) {
+  if (trackData?.requiresPremium) return <TracklistLocked />;
+  if (trackData && trackData.tracks.length > 0) return <TrackList tracks={trackData.tracks} />;
+  return <div className="text-zinc-500">Tracklist will appear here</div>;
 }
 
 function TracklistLocked() {

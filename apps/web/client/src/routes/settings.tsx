@@ -1,7 +1,8 @@
-import { useAuth, SignInButton } from "@clerk/clerk-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { SignInButton, useAuth } from "@clerk/clerk-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Settings, Crown, LogIn, Bell, BellOff } from "lucide-react";
+import dayjs from "dayjs";
+import { Bell, BellOff, Crown, LogIn, Settings } from "lucide-react";
 
 import { useClient } from "../lib/client";
 import { billingQueries, useCreateCheckout } from "../queries/billing";
@@ -44,7 +45,11 @@ function SettingsPage() {
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Account</h2>
-        {user ? <AccountCard email={user.email} isPremium={billing?.isPremium ?? false} /> : <SignInPrompt />}
+        {user ? (
+          <AccountCard email={user.email} isPremium={billing?.isPremium ?? false} />
+        ) : (
+          <SignInPrompt />
+        )}
       </section>
 
       {isSignedIn && (
@@ -157,6 +162,7 @@ function NotificationCard() {
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
         >
+          {/* oxlint-disable-next-line no-nested-ternary */}
           {toggle.isPending ? "..." : isEnabled ? "Disable" : "Enable"}
         </button>
       </div>
@@ -171,14 +177,14 @@ function PremiumCard({
   isLoading,
 }: {
   isPremium: boolean;
-  subscription?: { status: string; cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null } | null;
+  subscription?: {
+    status: string;
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: number | null;
+  } | null;
   onUpgrade: () => void;
   isLoading: boolean;
 }) {
-  const handleManage = () => {
-    window.location.href = "/billing/portal";
-  };
-
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
       <div className="flex items-start gap-4">
@@ -196,11 +202,14 @@ function PremiumCard({
             <div className="mt-4 space-y-2">
               {subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
                 <div className="text-sm text-yellow-500">
-                  Cancels at end of period ({new Date(subscription.currentPeriodEnd * 1000).toLocaleDateString()})
+                  Cancels at end of period (
+                  {dayjs.unix(subscription.currentPeriodEnd).format("YYYY/MM/DD")})
                 </div>
               )}
               <button
-                onClick={handleManage}
+                onClick={() => {
+                  window.location.href = "/billing/portal";
+                }}
                 className="rounded-lg border border-zinc-700 px-6 py-2 text-sm text-zinc-400 hover:bg-zinc-800"
               >
                 Manage Subscription
