@@ -1,7 +1,8 @@
-import type { DB } from "./db";
 import { users } from "@listen/db";
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
+
+import type { DB } from "./db";
 
 async function findExistingUser(db: DB, clerkUserId: string, email: string) {
   const byClerk = await db.query.users.findFirst({

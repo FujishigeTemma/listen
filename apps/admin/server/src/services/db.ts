@@ -2,7 +2,7 @@ import * as schema from "@listen/db";
 import { Cloudflare } from "cloudflare";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 
-export interface D1HttpConfig {
+interface D1HttpConfig {
   accountId: string;
   databaseId: string;
   apiToken: string;

@@ -1,8 +1,10 @@
-import type { DB } from "./db";
-import { users, subscriptions } from "@listen/db";
 import type { Subscription as PolarSubscription } from "@polar-sh/sdk/models/components/subscription";
+
+import { users, subscriptions } from "@listen/db";
 import dayjs from "dayjs";
 import { eq } from "drizzle-orm";
+
+import type { DB } from "./db";
 
 // oxlint-disable-next-line unicorn/no-null -- null is required for JSON serialization
 function toUnixTimestamp(date: Date | null | undefined): number | null {
@@ -11,7 +13,7 @@ function toUnixTimestamp(date: Date | null | undefined): number | null {
   return dayjs(date).unix();
 }
 
-export type SubscriptionStatus =
+type SubscriptionStatus =
   | "active"
   | "canceled"
   | "past_due"
@@ -51,32 +53,30 @@ async function upsertSubscription(
     where: eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId),
   });
 
-  if (existing) {
-    await db
-      .update(subscriptions)
-      .set({
-        status: data.status,
-        currentPeriodStart: data.currentPeriodStart ?? existing.currentPeriodStart,
-        currentPeriodEnd: data.currentPeriodEnd ?? existing.currentPeriodEnd,
-        cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-        updatedAt: now,
-      })
-      .where(eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId));
-  } else {
-    await db.insert(subscriptions).values([
-      {
-        userId,
-        polarSubscriptionId: data.polarSubscriptionId,
-        polarProductId: data.polarProductId,
-        status: data.status,
-        currentPeriodStart: data.currentPeriodStart,
-        currentPeriodEnd: data.currentPeriodEnd,
-        cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ]);
-  }
+  await (existing
+    ? db
+        .update(subscriptions)
+        .set({
+          status: data.status,
+          currentPeriodStart: data.currentPeriodStart ?? existing.currentPeriodStart,
+          currentPeriodEnd: data.currentPeriodEnd ?? existing.currentPeriodEnd,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+          updatedAt: now,
+        })
+        .where(eq(subscriptions.polarSubscriptionId, data.polarSubscriptionId))
+    : db.insert(subscriptions).values([
+        {
+          userId,
+          polarSubscriptionId: data.polarSubscriptionId,
+          polarProductId: data.polarProductId,
+          status: data.status,
+          currentPeriodStart: data.currentPeriodStart,
+          currentPeriodEnd: data.currentPeriodEnd,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]));
 }
 
 /**

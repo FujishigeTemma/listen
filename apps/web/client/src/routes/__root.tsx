@@ -1,5 +1,6 @@
-import { SignedIn, SignedOut, UserButton, SignInButton, useAuth } from "@clerk/clerk-react";
 import type { QueryClient } from "@tanstack/react-query";
+
+import { Show, UserButton, SignInButton, useAuth } from "@clerk/react";
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { Radio, Archive, Bell, Settings, LogIn } from "lucide-react";
 import { useEffect } from "react";
@@ -32,10 +33,10 @@ function RootLayout() {
             DJ Audio Livestream
           </div>
         </footer>
-        <SignedIn>
+        <Show when="signed-in">
           <ClientInit />
           <UserSync />
-        </SignedIn>
+        </Show>
       </div>
     </AuthProvider>
   );
@@ -89,17 +90,17 @@ function Navigation() {
 function AuthSection() {
   return (
     <div className="flex items-center">
-      <SignedIn>
+      <Show when="signed-in">
         <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
-      </SignedIn>
-      <SignedOut>
+      </Show>
+      <Show when="signed-out">
         <SignInButton mode="modal">
           <button className="flex items-center gap-1 rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">
             <LogIn className="h-4 w-4" />
             Sign In
           </button>
         </SignInButton>
-      </SignedOut>
+      </Show>
     </div>
   );
 }

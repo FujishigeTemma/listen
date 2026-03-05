@@ -12,16 +12,16 @@
     "typecheck:worker": "tsgo -p worker --noEmit"
   },
   "dependencies": {
-    "@clerk/backend": "^2.29.6",
-    "@clerk/clerk-react": "^5.60.0",
+    "@clerk/backend": "^3.0.1",
+    "@clerk/react": "^6.0.1",
     "@hono/clerk-auth": "^3.1.0",
     "@hono/valibot-validator": "catalog:",
     "@listen/db": "workspace:*",
+    "@listen/mailer": "workspace:*",
     "@listen/shared": "workspace:*",
     "@polar-sh/sdk": "^0.46.1",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
-    "clsx": "^2.1.1",
     "drizzle-orm": "catalog:",
     "hls.js": "^1.6.15",
     "hono": "catalog:",
@@ -29,21 +29,20 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-error-boundary": "^6.1.1",
-    "tailwind-merge": "^3.4.0",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.25.5",
+    "@cloudflare/vite-plugin": "^1.26.0",
     "@polar-sh/hono": "^0.5.4",
-    "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/devtools-vite": "^0.4.1",
-    "@tanstack/router-plugin": "^1.157.16",
-    "@types/node": "^25.1.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/devtools-vite": "^0.5.3",
+    "@tanstack/router-plugin": "^1.164.0",
+    "@types/node": "^25.3.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:",
     "vite": "catalog:",
-    "wrangler": "^4.68.1"
+    "wrangler": "^4.70.0"
   }
 }

@@ -1,7 +1,8 @@
-import type { Variables } from "../types";
 import { tracks } from "@listen/db";
 import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
+
+import type { Variables } from "../types";
 
 import { createDB } from "../lib/db";
 

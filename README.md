@@ -9,6 +9,7 @@ DJ配信・アーカイブプラットフォーム
 | Admin Server   | `apps/admin/server` | Hono (Node.js) — 録音・HLSセグメント管理・R2アップロード   |
 | Admin Client   | `apps/admin/client` | Vite + React — 管理画面                                    |
 | Web App        | `apps/web`          | Vite + Cloudflare Workers (Hono) + React — リスナー向けSPA |
+| Mailer         | `apps/mailer`       | Cloudflare Workers (Cron + Queue) — 通知メール配信         |
 | DB Schema      | `packages/db`       | Drizzle ORM スキーマ定義                                   |
 | Shared         | `packages/shared`   | 共有ユーティリティ                                         |
 
@@ -25,6 +26,7 @@ DJ配信・アーカイブプラットフォーム
 | Cloudflare D1 | データベース             | Cloudflare Dashboard |
 | Cloudflare R2 | HLSセグメントストレージ  | Cloudflare Dashboard |
 | Clerk         | 認証                     | clerk.com            |
+| Resend        | メール送信               | resend.com           |
 | Polar         | 課金・サブスクリプション | polar.sh             |
 
 ## 環境変数の設定
@@ -45,11 +47,20 @@ cp apps/web/.dev.vars.example apps/web/.dev.vars
 # 各値を実際の値で埋める
 ```
 
+3. Mailer 用の `.dev.vars` を作成:
+
+```sh
+cp apps/mailer/.dev.vars.example apps/mailer/.dev.vars
+# 各値を実際の値で埋める
+```
+
 ### 本番環境 (prod)
 
 - Admin Server: デプロイ先のホスティングサービスで環境変数を設定
 - Web Worker: `wrangler secret put <KEY>` でシークレットを登録
   - `wrangler.jsonc` の `database_id` を実際の D1 データベースIDに変更
+- Mailer: `wrangler secret put <KEY>` でシークレットを登録
+  - `wrangler.jsonc` の `database_id` と Queue 名を実際のリソースに合わせる
 
 ### 環境変数一覧
 
@@ -94,9 +105,20 @@ cp apps/web/.dev.vars.example apps/web/.dev.vars
 | `CLERK_SECRET_KEY`             | **必須** | Clerkシークレットキー         |
 | `CLERK_PUBLISHABLE_KEY`        | **必須** | Clerk公開キー                 |
 | `CLERK_WEBHOOK_SIGNING_SECRET` | **必須** | Clerk Webhook署名シークレット |
+| `PUBLIC_URL`                   | **必須** | 公開URL（認証リンク生成用）   |
+| `RESEND_API_KEY`               | **必須** | Resend APIキー                |
+| `RESEND_FROM_EMAIL`            | **必須** | 通知メール送信元アドレス      |
 | `POLAR_ACCESS_TOKEN`           | **必須** | Polarアクセストークン         |
 | `POLAR_WEBHOOK_SECRET`         | **必須** | Polar Webhookシークレット     |
 | `POLAR_PRODUCT_ID`             | **必須** | Polar商品ID                   |
+
+#### Mailer (`.dev.vars` / Wrangler Secrets)
+
+| 変数名              | 必須     | 説明                        |
+| ------------------- | -------- | --------------------------- |
+| `PUBLIC_URL`        | **必須** | 公開URL（本文リンク生成用） |
+| `RESEND_API_KEY`    | **必須** | Resend APIキー              |
+| `RESEND_FROM_EMAIL` | **必須** | 通知メール送信元アドレス    |
 
 ## 開発
 
@@ -110,6 +132,12 @@ pnpm dev
 | Admin Server | 8080   |
 | Admin Client | 5173   |
 | Web App      | 8787   |
+
+Mailer をローカル起動する場合:
+
+```sh
+pnpm dev:email
+```
 
 ### ffmpeg の設定
 

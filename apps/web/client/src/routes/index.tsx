@@ -1,7 +1,8 @@
-import type { Track } from "../queries/tracks";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Radio, Calendar } from "lucide-react";
+
+import type { Track } from "../queries/tracks";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";

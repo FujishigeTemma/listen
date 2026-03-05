@@ -1,5 +1,3 @@
-import type { DB } from "../lib/db";
-import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
 import { subscriptions, users } from "@listen/db";
 import { CustomerPortal, Webhooks } from "@polar-sh/hono";
@@ -7,20 +5,25 @@ import { Polar } from "@polar-sh/sdk";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 
+import type { DB } from "../lib/db";
+import type { Variables } from "../types";
+
 import { createDB } from "../lib/db";
 import { handleSubscriptionEvent, isSubscriptionStatus } from "../lib/polar";
 import { upsertUser } from "../lib/user";
 
 async function resolveUser(
   db: DB,
-  opts: { userId?: number; authUserId: string; getClerkEmail: () => Promise<string | undefined> },
+  userId: number | undefined,
+  authUserId: string,
+  getClerkEmail: () => Promise<string | undefined>,
 ) {
-  if (opts.userId) {
-    return db.query.users.findFirst({ where: eq(users.id, opts.userId) });
+  if (userId) {
+    return db.query.users.findFirst({ where: eq(users.id, userId) });
   }
-  const email = await opts.getClerkEmail();
-  await upsertUser(db, opts.authUserId, email);
-  return db.query.users.findFirst({ where: eq(users.clerkUserId, opts.authUserId) });
+  const email = await getClerkEmail();
+  await upsertUser(db, authUserId, email);
+  return db.query.users.findFirst({ where: eq(users.clerkUserId, authUserId) });
 }
 
 const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -64,13 +67,9 @@ const billingRoutes = new Hono<{ Bindings: Env; Variables: Variables }>()
     if (!productId) return c.json({ error: "Billing not configured" }, 500);
 
     const db = createDB(c.env.DB);
-    const user = await resolveUser(db, {
-      userId: c.get("userId"),
-      authUserId: auth.userId,
-      getClerkEmail: async () => {
-        const clerkUser = await c.get("clerk").users.getUser(auth.userId);
-        return clerkUser.emailAddresses[0]?.emailAddress;
-      },
+    const user = await resolveUser(db, c.get("userId"), auth.userId, async () => {
+      const clerkUser = await c.get("clerk").users.getUser(auth.userId);
+      return clerkUser.emailAddresses[0]?.emailAddress;
     });
     if (!user) return c.json({ error: "User not found" }, 404);
 

@@ -1,0 +1,30 @@
+{
+  "name": "@listen/mailer",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typegen": "wrangler types",
+    "typecheck": "tsgo -p . --noEmit"
+  },
+  "dependencies": {
+    "@listen/db": "workspace:*",
+    "@listen/shared": "workspace:*",
+    "@react-email/components": "^0.0.41",
+    "dayjs": "^1.11.19",
+    "drizzle-orm": "catalog:",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "resend": "^6.9.3",
+    "svix": "^1.86.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@types/react": "^19.1.8",
+    "wrangler": "^4.70.0"
+  }
+}

@@ -82,32 +82,6 @@ export function useStopSession() {
   });
 }
 
-export function useUpdateSchedule() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      scheduledAt,
-      title,
-    }: {
-      id: string;
-      scheduledAt: number;
-      title?: string;
-    }) => {
-      const res = await client.api.sessions[":id"].schedule.$put({
-        param: { id },
-        json: { scheduledAt, title },
-      });
-      if (!res.ok) throw new Error("Failed to update schedule");
-      return res.json();
-    },
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      void queryClient.invalidateQueries({ queryKey: ["sessions", id] });
-    },
-  });
-}
-
 // Tracks queries
 export function useTracks(sessionId: string) {
   return useQuery({

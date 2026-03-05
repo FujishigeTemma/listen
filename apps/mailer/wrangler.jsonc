@@ -1,0 +1,38 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "listen-mailer",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "listen",
+      "database_id": "<D1_DATABASE_ID>",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "NOTIFICATION_EMAIL_QUEUE",
+        "queue": "listen-notification-email",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "listen-notification-email",
+        "max_batch_size": 25,
+        "max_batch_timeout": 5,
+      },
+    ],
+  },
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+  "vars": {
+    "PUBLIC_URL": "https://listen.example.com",
+  },
+}

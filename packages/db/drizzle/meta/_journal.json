@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1769196419837,
-      "tag": "0000_shallow_maginty",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1772870400000,
-      "tag": "0001_paid_accounts",
+      "when": 1772689180499,
+      "tag": "0000_open_gorgon",
       "breakpoints": true
     }
   ]

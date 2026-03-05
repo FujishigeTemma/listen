@@ -1,8 +1,9 @@
-import type { Variables } from "./types";
 import { clerkMiddleware } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+
+import type { Variables } from "./types";
 
 import { userMiddleware } from "./middleware/auth";
 import { billingRoutes } from "./routes/billing";

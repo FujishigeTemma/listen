@@ -1,4 +1,5 @@
 import type { InferOutput } from "valibot";
+
 import * as v from "valibot";
 
 const EnvSchema = v.object({
@@ -33,9 +34,9 @@ const EnvSchema = v.object({
   D1_DATABASE_ID: v.string(),
 });
 
-export type Env = InferOutput<typeof EnvSchema>;
+type Env = InferOutput<typeof EnvSchema>;
 
-export function parseEnv(): Env {
+function parseEnv(): Env {
   const result = v.safeParse(EnvSchema, process.env);
   if (!result.success) {
     const issues = v.flatten(result.issues);

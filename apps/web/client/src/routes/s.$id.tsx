@@ -1,9 +1,10 @@
-import type { Track } from "../queries/tracks";
 import { formatTimestamp } from "@listen/shared";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
+
+import type { Track } from "../queries/tracks";
 
 import { Player } from "../components/player";
 import { TrackList } from "../components/track-list";

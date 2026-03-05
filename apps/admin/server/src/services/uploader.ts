@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
-
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+// eslint-disable-next-line import/no-nodejs-modules -- server-side Node.js file
+import { readFile } from "node:fs/promises";
+// eslint-disable-next-line import/no-nodejs-modules -- server-side Node.js file
+import { basename } from "node:path";
 import PQueue from "p-queue";
 
 import { env } from "../lib/env";
@@ -26,7 +27,7 @@ function getContentType(filename: string): string {
   return "application/octet-stream";
 }
 
-export async function uploadFile(localPath: string, remotePath: string): Promise<void> {
+async function uploadFile(localPath: string, remotePath: string): Promise<void> {
   return uploadQueue.add(async () => {
     const body = await readFile(localPath);
     const contentType = getContentType(basename(localPath));

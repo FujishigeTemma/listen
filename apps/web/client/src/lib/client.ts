@@ -1,9 +1,10 @@
-import type { AppType } from "../../../worker/src/index";
 import { hc } from "hono/client";
+
+import type { AppType } from "../../../worker/src/index";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8787";
 
-export type Client = ReturnType<typeof hc<AppType>>;
+type Client = ReturnType<typeof hc<AppType>>;
 
 let getToken: (() => Promise<string | null>) | undefined = undefined;
 
@@ -22,6 +23,6 @@ const client: Client = hc<AppType>(API_BASE, {
   },
 });
 
-export function useClient(): Client {
+export function getClient(): Client {
   return client;
 }

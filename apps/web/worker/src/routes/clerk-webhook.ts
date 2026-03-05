@@ -1,10 +1,12 @@
-import type { DB } from "../lib/db";
-import type { Variables } from "../types";
 import type { WebhookEvent } from "@clerk/backend/webhooks";
+
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { users } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+
+import type { DB } from "../lib/db";
+import type { Variables } from "../types";
 
 import { createDB } from "../lib/db";
 import { upsertUser } from "../lib/user";

@@ -1,5 +1,6 @@
-import { watch } from "chokidar";
 import type { FSWatcher } from "chokidar";
+
+import { watch } from "chokidar";
 
 import { uploadSegment, uploadPlaylist } from "./uploader";
 

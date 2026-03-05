@@ -1,5 +1,6 @@
-import type { Track } from "../queries/tracks";
 import { formatTimestamp } from "@listen/shared";
+
+import type { Track } from "../queries/tracks";
 
 const NOT_FOUND = -1;
 const FIRST_INDEX = 0;
@@ -41,14 +42,14 @@ export function TrackList({ tracks, currentTime, onSeek }: TrackListProps) {
           }
         };
 
+        const Tag = onSeek ? "button" : "div";
         return (
-          <div
+          <Tag
             key={track.id}
-            role={onSeek ? "button" : undefined}
             tabIndex={onSeek ? FIRST_INDEX : undefined}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
-            className={`flex items-center gap-3 rounded px-3 py-2 text-sm transition-colors ${
+            className={`flex items-center gap-3 rounded px-3 py-2 text-left text-sm transition-colors ${
               onSeek ? "cursor-pointer hover:bg-zinc-800" : ""
             } ${isCurrent ? "bg-zinc-800" : ""}`}
           >
@@ -68,7 +69,7 @@ export function TrackList({ tracks, currentTime, onSeek }: TrackListProps) {
                 <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
               </div>
             )}
-          </div>
+          </Tag>
         );
       })}
     </div>

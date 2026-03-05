@@ -1,9 +1,11 @@
-import { mkdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import type { ResultPromise } from "execa";
 
 import dayjs from "dayjs";
-import type { ResultPromise } from "execa";
 import { execa } from "execa";
+// eslint-disable-next-line import/no-nodejs-modules -- server-side Node.js file
+import { mkdir } from "node:fs/promises";
+// eslint-disable-next-line import/no-nodejs-modules -- server-side Node.js file
+import { join } from "node:path";
 
 import { env } from "../lib/env";
 
@@ -161,10 +163,4 @@ export function getCurrentSessionId(): string | undefined {
 export function getRecordingDuration(): number | undefined {
   if (!startTime) return undefined;
   return Math.floor((dayjs().valueOf() - startTime) / 1000);
-}
-
-export async function cleanupSession(sessionId: string): Promise<void> {
-  const { baseDir } = getOutputDirs(sessionId);
-  await rm(baseDir, { recursive: true, force: true });
-  console.log(`[ffmpeg] cleaned up session ${sessionId}`);
 }

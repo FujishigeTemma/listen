@@ -1,8 +1,9 @@
-import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import type { FallbackProps } from "react-error-boundary";
+
+import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import type { FallbackProps } from "react-error-boundary";
 
 import { LoadingSpinner } from "./loading-spinner";
 

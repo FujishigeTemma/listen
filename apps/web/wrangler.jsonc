@@ -24,6 +24,14 @@
       "bucket_name": "listen",
     },
   ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "NOTIFICATION_EMAIL_QUEUE",
+        "queue": "listen-notification-email",
+      },
+    ],
+  },
   "vars": {
     "PUBLIC_URL": "https://listen.example.com",
   },

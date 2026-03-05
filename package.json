@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel --stream run dev",
     "dev:admin": "pnpm --filter @listen/admin dev",
+    "dev:email": "pnpm --filter @listen/mailer dev",
     "dev:web": "pnpm --filter @listen/web dev",
     "build": "pnpm run -r build",
     "typecheck": "pnpm -r --parallel run typecheck",
@@ -12,21 +13,24 @@
     "format": "oxfmt",
     "db:generate": "pnpm --filter @listen/db generate",
     "db:migrate": "pnpm --filter @listen/db migrate",
-    "deploy:web": "pnpm --filter @listen/web deploy"
+    "deploy:email": "pnpm --filter @listen/mailer deploy",
+    "deploy:web": "pnpm --filter @listen/web deploy",
+    "knip": "knip --fix --allow-remove-files"
   },
   "dependencies": {
     "dayjs": "^1.11.19"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260129.1",
+    "@typescript/native-preview": "7.0.0-dev.20260304.1",
+    "knip": "^5.85.0",
     "npm-run-all2": "^8.0.4",
-    "oxfmt": "^0.27.0",
-    "oxlint": "^1.42.0",
-    "oxlint-tsgolint": "^0.11.3"
+    "oxfmt": "^0.36.0",
+    "oxlint": "^1.51.0",
+    "oxlint-tsgolint": "^0.16.0"
   },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@10.30.3"
 }

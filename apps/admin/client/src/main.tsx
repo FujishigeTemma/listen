@@ -1,6 +1,5 @@
 // oxlint-disable-next-line import/no-unassigned-import -- CSS side-effect import
 import "./style.css";
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";

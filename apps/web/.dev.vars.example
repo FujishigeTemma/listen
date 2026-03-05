@@ -4,6 +4,7 @@ CLERK_PUBLISHABLE_KEY=pk_test_xxx
 
 # Clerk Webhook (required for user sync)
 CLERK_WEBHOOK_SIGNING_SECRET=whsec_xxx
+PUBLIC_URL=http://localhost:8787
 
 # Polar (required for billing features)
 POLAR_ACCESS_TOKEN=polar_xxx

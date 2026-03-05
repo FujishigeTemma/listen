@@ -1,6 +1,5 @@
 /* oxlint-disable import/no-unassigned-import -- CSS side-effect import */
 import "./style.css";
-
 import { QueryCache, QueryClient, QueryClientProvider, MutationCache } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";

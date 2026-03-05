@@ -1,0 +1,6 @@
+# Resend
+RESEND_API_KEY=re_xxx
+RESEND_FROM_EMAIL=notifications@example.com
+
+# Public app URL (for links in email body)
+PUBLIC_URL=http://localhost:8787

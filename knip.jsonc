@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "tags": ["-lintignore"],
+  "ignoreBinaries": ["ffmpeg"],
+  "ignoreIssues": {
+    "**/src/routeTree.gen.ts": ["exports", "types"],
+  },
+  "workspaces": {
+    ".": {},
+    "apps/admin": {
+      "entry": ["client/src/main.tsx"],
+      // Keep this utility for upcoming UI work; don't report it (and its helper deps) for now.
+      "ignoreFiles": ["client/src/lib/cn.ts"],
+      "ignoreDependencies": ["clsx", "tailwind-merge"],
+    },
+    "apps/web": {
+      "entry": ["worker/src/index.ts", "client/src/main.tsx"],
+    },
+    "apps/mailer": {
+      "entry": ["src/index.ts"],
+    },
+  },
+}

@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+
 import { Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 
 interface RouterContext {

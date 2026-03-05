@@ -1,4 +1,4 @@
-import { useAuth, SignInButton } from "@clerk/clerk-react";
+import { useAuth, SignInButton } from "@clerk/react";
 import { Crown, LogIn } from "lucide-react";
 
 import { useCreateCheckout } from "../queries/billing";

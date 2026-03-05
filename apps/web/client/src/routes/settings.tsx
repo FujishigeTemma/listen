@@ -1,4 +1,4 @@
-import { SignInButton, useAuth } from "@clerk/clerk-react";
+import { SignInButton, useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -6,7 +6,11 @@ import { Bell, BellOff, Crown, LogIn, Settings } from "lucide-react";
 
 import { billingQueries, useCreateCheckout } from "../queries/billing";
 import { meQueries } from "../queries/me";
-import { notificationQueries, useToggleNotification } from "../queries/notifications";
+import {
+  notificationQueries,
+  useSubscribeNotification,
+  useUnsubscribeNotification,
+} from "../queries/notifications";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -100,8 +104,10 @@ function SignInPrompt() {
 
 function NotificationCard() {
   const { data: status } = useQuery(notificationQueries.status());
-  const toggle = useToggleNotification();
+  const subscribe = useSubscribeNotification();
+  const unsubscribe = useUnsubscribeNotification();
   const isEnabled = status?.enabled ?? false;
+  const isPending = subscribe.isPending || unsubscribe.isPending;
 
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
@@ -120,8 +126,14 @@ function NotificationCard() {
           </div>
         </div>
         <button
-          onClick={() => toggle.mutate(!isEnabled)}
-          disabled={toggle.isPending}
+          onClick={() => {
+            if (isEnabled) {
+              unsubscribe.mutate({ mode: "auth" });
+            } else {
+              subscribe.mutate({ mode: "auth" });
+            }
+          }}
+          disabled={isPending}
           className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
             isEnabled
               ? "border border-zinc-700 text-zinc-400 hover:bg-zinc-800"
@@ -129,7 +141,7 @@ function NotificationCard() {
           }`}
         >
           {/* oxlint-disable-next-line no-nested-ternary */}
-          {toggle.isPending ? "..." : isEnabled ? "Disable" : "Enable"}
+          {isPending ? "..." : isEnabled ? "Disable" : "Enable"}
         </button>
       </div>
     </div>

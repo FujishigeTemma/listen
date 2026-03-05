@@ -1,6 +1,7 @@
-import { ClerkProvider } from "@clerk/clerk-react";
-import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+
+import { ClerkProvider } from "@clerk/react";
+import { useNavigate } from "@tanstack/react-router";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 

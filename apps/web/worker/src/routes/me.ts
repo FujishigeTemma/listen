@@ -1,8 +1,9 @@
-import type { Variables } from "../types";
 import { getAuth } from "@hono/clerk-auth";
 import { users } from "@listen/db";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+
+import type { Variables } from "../types";
 
 import { createDB } from "../lib/db";
 import { upsertUser } from "../lib/user";
